@@ -1,0 +1,1747 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>ALEX O — محمّل الوسائط</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cairo:wght@300;400;600;700;900&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+<style>
+/* ═══════════════ RESET & VARS ═══════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+:root{
+  --ink:#020818;--deep:#060e1c;
+  --panel:rgba(5,12,28,.92);--panel2:rgba(8,18,36,.88);
+  --c1:#00d4ff;--c2:#0098c7;--c3:#004e6e;
+  --gold:#d4a017;--gold2:#f2c94c;--silver:#c0c8d8;--silver2:#e8edf5;
+  --border:rgba(0,212,255,.14);--border2:rgba(0,212,255,.06);
+  --text:#d8f0ff;--muted:#3a6070;--muted2:#6aacbf;
+  --r:18px;--r2:12px;
+  --success:#4ade80;--error:#f87171;--warn:#fbbf24;
+}
+body{font-family:'Cairo',sans-serif;background:var(--ink);color:var(--text);min-height:100vh;overflow-x:hidden}
+input,button,textarea,select{font-family:'Cairo',sans-serif}
+button{cursor:pointer}
+a{text-decoration:none;color:inherit}
+
+/* ═══════════════ SPLASH ═══════════════ */
+#splash{position:fixed;inset:0;z-index:9999;background:radial-gradient(ellipse 120% 120% at 50% 50%,#030f25 0%,#010510 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .8s ease,visibility .8s ease}
+#splash.hide{opacity:0;visibility:hidden;pointer-events:none}
+.sp-sun-wrap{position:relative;width:180px;height:180px;margin-bottom:2rem}
+.sp-halo{position:absolute;inset:-30px;border-radius:50%;background:radial-gradient(circle,rgba(0,180,255,.22) 0%,transparent 70%);animation:halo 3s ease-in-out infinite}
+#splashSun{width:180px;height:180px;animation:sp-spin 10s linear infinite;filter:drop-shadow(0 0 20px rgba(0,200,255,.8)) drop-shadow(0 0 60px rgba(0,120,200,.4))}
+@keyframes sp-spin{to{transform:rotate(360deg)}}
+@keyframes halo{0%,100%{transform:scale(1);opacity:.6}50%{transform:scale(1.18);opacity:1}}
+.sp-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(3rem,10vw,5.5rem);letter-spacing:.3em;background:linear-gradient(135deg,#fff 20%,#00d4ff 60%,#0098c7 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:fdDown .8s ease both .3s;text-align:center}
+.sp-welcome{font-size:clamp(1rem,3vw,1.3rem);font-weight:700;color:#7dd3fc;margin-top:.5rem;animation:fdDown .8s ease both .6s;text-align:center}
+.sp-msg{font-size:clamp(.85rem,2.5vw,1rem);color:#4a8ca8;margin-top:.4rem;animation:fdDown .8s ease both .9s;text-align:center;line-height:1.7;max-width:380px;padding:0 1rem}
+.sp-line{width:200px;height:1px;background:linear-gradient(90deg,transparent,#00d4ff,transparent);margin:1.4rem auto;animation:fdIn .8s ease both 1.2s}
+.sp-enter{font-family:'Orbitron',sans-serif;font-size:.72rem;font-weight:700;letter-spacing:.2em;color:#4a8ca8;text-transform:uppercase;animation:blink 1.5s ease-in-out infinite,fdIn .8s ease both 1.5s}
+@keyframes blink{0%,100%{opacity:.4}50%{opacity:1}}
+@keyframes fdDown{from{opacity:0;transform:translateY(-15px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fdUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fdIn{from{opacity:0}to{opacity:1}}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ═══════════════ BG CANVAS ═══════════════ */
+#cvs{position:fixed;inset:0;z-index:0;pointer-events:none}
+.grid-bg{position:fixed;inset:0;z-index:1;pointer-events:none;background-image:linear-gradient(rgba(0,212,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.02) 1px,transparent 1px);background-size:50px 50px;mask-image:radial-gradient(ellipse 80% 80% at 50% 30%,black 0%,transparent 100%)}
+.mesh{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse 70% 50% at 50% 0%,rgba(0,150,220,.07) 0%,transparent 60%),radial-gradient(ellipse 40% 60% at 0% 70%,rgba(0,80,160,.05) 0%,transparent 55%)}
+
+/* ═══════════════ LAYOUT ═══════════════ */
+.page{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;padding-bottom:5rem}
+
+/* ═══════════════ TOPBAR ═══════════════ */
+.topbar{width:100%;padding:.75rem 1.5rem;display:flex;align-items:center;justify-content:space-between;gap:.8rem;background:rgba(2,8,24,.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border2);position:sticky;top:0;z-index:200}
+.tb-left{display:flex;align-items:center;gap:.6rem}
+.tb-menu-btn{width:36px;height:36px;border:1px solid var(--border);border-radius:10px;background:rgba(0,212,255,.06);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;transition:all .2s;flex-shrink:0}
+.tb-menu-btn:hover{background:rgba(0,212,255,.12);border-color:rgba(0,212,255,.3)}
+.tb-menu-btn span{display:block;width:16px;height:1.5px;background:var(--c1);border-radius:2px;transition:all .3s}
+.tb-brand{display:flex;align-items:center;gap:.5rem;text-decoration:none}
+.tb-logo{width:26px;height:26px}
+.tb-name{font-family:'Orbitron',sans-serif;font-size:.82rem;font-weight:900;letter-spacing:.15em;color:var(--c1)}
+.tb-name em{color:var(--gold2);font-style:normal}
+
+.tb-right{display:flex;align-items:center;gap:.7rem}
+
+/* Token Coin */
+.token-coin{display:flex;align-items:center;gap:.5rem;padding:.3rem .7rem .3rem .35rem;background:rgba(212,160,23,.08);border:1px solid rgba(212,160,23,.25);border-radius:999px;transition:all .2s;cursor:pointer}
+.token-coin:hover{background:rgba(212,160,23,.14);border-color:rgba(212,160,23,.45)}
+.coin-svg{width:28px;height:28px;flex-shrink:0}
+.coin-count{font-family:'Orbitron',sans-serif;font-size:.8rem;font-weight:700;color:var(--gold2);line-height:1}
+.coin-label{font-size:.58rem;color:var(--gold);opacity:.7;letter-spacing:.05em}
+
+.tb-auth-btn{display:flex;align-items:center;gap:.4rem;padding:.38rem .85rem;border-radius:10px;font-size:.78rem;font-weight:700;border:1px solid var(--border);background:rgba(0,212,255,.07);color:var(--c1);transition:all .2s}
+.tb-auth-btn:hover{background:rgba(0,212,255,.14);border-color:rgba(0,212,255,.35)}
+.tb-user-chip{display:flex;align-items:center;gap:.45rem;padding:.3rem .7rem;border-radius:999px;background:rgba(0,212,255,.08);border:1px solid var(--border);font-size:.75rem;font-weight:700;color:var(--muted2)}
+.tb-user-chip .uid{font-family:'Orbitron',sans-serif;font-size:.62rem;color:var(--muted);padding:.05rem .4rem;background:rgba(0,0,0,.3);border-radius:999px}
+
+/* ═══════════════ SIDE DRAWER ═══════════════ */
+.drawer-overlay{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.6);opacity:0;visibility:hidden;transition:all .3s;backdrop-filter:blur(4px)}
+.drawer-overlay.on{opacity:1;visibility:visible}
+.drawer{position:fixed;top:0;right:-320px;width:300px;height:100vh;z-index:501;background:rgba(4,10,24,.98);border-left:1px solid var(--border);display:flex;flex-direction:column;transition:right .35s cubic-bezier(.4,0,.2,1);overflow-y:auto}
+.drawer.on{right:0}
+.drawer-head{padding:1.5rem 1.2rem 1rem;border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between}
+.drawer-title{font-family:'Orbitron',sans-serif;font-size:.75rem;font-weight:700;letter-spacing:.18em;color:var(--c1);text-transform:uppercase}
+.drawer-close{width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted2);display:flex;align-items:center;justify-content:center;font-size:1.1rem;transition:all .2s}
+.drawer-close:hover{background:rgba(255,255,255,.06);color:var(--text)}
+.drawer-body{padding:1rem;display:flex;flex-direction:column;gap:.4rem;flex:1}
+.drawer-item{display:flex;align-items:center;gap:.75rem;padding:.8rem 1rem;border-radius:var(--r2);border:1px solid transparent;background:transparent;color:var(--muted2);font-size:.87rem;font-weight:600;transition:all .2s;width:100%;text-align:right}
+.drawer-item:hover{background:rgba(0,212,255,.06);border-color:var(--border);color:var(--text)}
+.drawer-item.active{background:rgba(0,212,255,.1);border-color:rgba(0,212,255,.25);color:var(--c1)}
+.drawer-item .di-icon{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0}
+.di-cyan{background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.2)}
+.di-gold{background:rgba(212,160,23,.1);border:1px solid rgba(212,160,23,.2)}
+.di-green{background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.2)}
+.di-red{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.2)}
+.di-purple{background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.2)}
+.di-orange{background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.2)}
+.drawer-sep{height:1px;background:var(--border2);margin:.4rem 0}
+.drawer-foot{padding:1rem 1.2rem;border-top:1px solid var(--border2)}
+.drawer-ver{font-size:.65rem;color:var(--muted);letter-spacing:.08em;text-align:center}
+
+/* ═══════════════ HERO ═══════════════ */
+.hero{width:100%;max-width:860px;display:flex;flex-direction:column;align-items:center;padding:3rem 1.5rem 1.5rem;text-align:center}
+.hero-sun-stage{position:relative;width:180px;height:180px;margin-bottom:1.8rem}
+
+/* 12 orbiting dots */
+.orbit-ring{position:absolute;inset:-22px;border-radius:50%;animation:spin 12s linear infinite}
+.orbit-dot{position:absolute;width:8px;height:8px;border-radius:50%;top:50%;left:50%;transform-origin:0 0}
+
+#heroSun{width:180px;height:180px;filter:drop-shadow(0 0 16px rgba(0,200,255,.7)) drop-shadow(0 0 50px rgba(0,120,200,.3));animation:float 7s ease-in-out infinite;transition:filter .4s;cursor:pointer}
+.hero-sun-stage:hover #heroSun{animation:spin 5s linear infinite;filter:drop-shadow(0 0 30px rgba(0,220,255,1)) drop-shadow(0 0 80px rgba(0,150,220,.5))}
+@keyframes float{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-7px) rotate(4deg)}}
+
+.hero-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(3rem,9vw,5.5rem);letter-spacing:.2em;line-height:1;animation:fdUp .8s ease both .2s}
+.ht-alex{color:#eaf6ff}
+.ht-o{background:linear-gradient(135deg,#0098c7,#00d4ff,#ffb300,#00d4ff);background-size:300% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:chroma 4s linear infinite}
+@keyframes chroma{to{background-position:300% center}}
+.hero-sub{font-family:'Orbitron',sans-serif;font-size:clamp(.68rem,2vw,.82rem);font-weight:700;letter-spacing:.22em;color:var(--muted2);text-transform:uppercase;margin-top:.5rem;animation:fdUp .8s ease both .4s}
+.scan-line{width:160px;height:1px;margin:.7rem auto;background:linear-gradient(90deg,transparent,var(--c1),transparent);animation:scan 3s ease-in-out infinite}
+@keyframes scan{0%,100%{opacity:.3;transform:scaleX(.5)}50%{opacity:1;transform:scaleX(1)}}
+
+/* Platform pills */
+.plats{display:flex;gap:.45rem;flex-wrap:wrap;justify-content:center;margin-top:1.3rem;animation:fdUp .8s ease both .6s}
+.plat{display:flex;align-items:center;gap:.4rem;padding:.28rem .85rem;border-radius:999px;font-size:.7rem;font-weight:700;letter-spacing:.05em;border:1.5px solid transparent;transition:transform .2s;cursor:default}
+.plat:hover{transform:translateY(-2px)}
+.p-yt{background:rgba(255,0,0,.07);border-color:rgba(255,80,80,.3);color:#ff8080}
+.p-ig{background:rgba(200,30,130,.07);border-color:rgba(200,30,130,.3);color:#f472b6}
+.p-fb{background:rgba(24,119,242,.07);border-color:rgba(24,119,242,.3);color:#60a5fa}
+.p-tt{background:rgba(0,240,255,.05);border-color:rgba(0,240,255,.2);color:#67e8f9}
+.p-tw{background:rgba(29,161,242,.05);border-color:rgba(29,161,242,.2);color:#7dd3fc}
+
+/* ═══════════════ MAIN CARD ═══════════════ */
+.card-wrap{width:100%;max-width:780px;padding:0 1.2rem;animation:fdUp .8s ease both .8s}
+.card{position:relative;background:var(--panel);border:1px solid var(--border);border-radius:22px;padding:2rem 1.8rem 1.8rem;box-shadow:0 25px 70px rgba(0,0,0,.7),inset 0 1px 0 rgba(0,212,255,.07);backdrop-filter:blur(24px);overflow:hidden}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--c2),var(--c1),var(--c2),transparent);opacity:.7}
+
+/* Token warning bar */
+.token-warn{display:none;align-items:center;gap:.5rem;padding:.6rem .9rem;background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.22);border-radius:var(--r2);margin-bottom:1rem;font-size:.8rem;color:#fbbf24}
+.token-warn.show{display:flex}
+
+/* Mode */
+.mode-bar{display:flex;gap:5px;background:rgba(0,0,0,.4);border:1px solid var(--border2);border-radius:12px;padding:4px;margin-bottom:1.3rem}
+.mbt{flex:1;padding:.5rem .3rem;border:none;border-radius:9px;background:transparent;color:var(--muted);font-size:.8rem;font-weight:700;cursor:pointer;transition:all .22s;display:flex;align-items:center;justify-content:center;gap:.3rem}
+.mbt.on{background:linear-gradient(135deg,rgba(0,212,255,.15),rgba(0,150,200,.08));color:var(--c1);box-shadow:0 0 0 1px rgba(0,212,255,.28),0 2px 12px rgba(0,212,255,.1)}
+.mbt:hover:not(.on){color:var(--text);background:rgba(255,255,255,.03)}
+
+/* Quality */
+.qrow{display:none;align-items:center;flex-wrap:wrap;gap:.4rem;padding:.6rem .85rem;margin-bottom:1rem;background:rgba(255,40,40,.04);border:1px solid rgba(255,80,80,.12);border-radius:var(--r2)}
+.qrow.on{display:flex;animation:fdIn .3s ease}
+.qlb{font-family:'Orbitron',sans-serif;font-size:.58rem;font-weight:700;letter-spacing:.15em;color:var(--muted2);text-transform:uppercase;margin-left:auto}
+.qc{padding:.22rem .65rem;border-radius:7px;border:1.5px solid rgba(255,80,80,.2);background:transparent;color:var(--muted2);font-size:.72rem;font-weight:700;cursor:pointer;transition:all .16s}
+.qc:hover{border-color:rgba(255,80,80,.45);color:#fca5a5}
+.qc.on{border-color:rgba(255,80,80,.55);background:rgba(255,0,0,.1);color:#fca5a5}
+
+/* Badge */
+.badge{display:none;align-items:center;gap:.38rem;font-size:.72rem;font-weight:700;letter-spacing:.06em;padding:.22rem .75rem;border-radius:999px;margin-bottom:.85rem;width:fit-content}
+.badge.on{display:inline-flex;animation:fdIn .3s ease}
+.b-yt{background:rgba(255,0,0,.08);border:1px solid rgba(255,80,80,.28);color:#f87171}
+.b-ig{background:rgba(200,30,130,.08);border:1px solid rgba(200,30,130,.28);color:#f472b6}
+.b-fb{background:rgba(24,119,242,.08);border:1px solid rgba(24,119,242,.28);color:#60a5fa}
+.b-tt{background:rgba(0,240,255,.05);border:1px solid rgba(0,240,255,.22);color:#67e8f9}
+.b-tw{background:rgba(29,161,242,.05);border:1px solid rgba(29,161,242,.22);color:#7dd3fc}
+
+/* Input */
+.irow{display:flex;gap:.65rem;margin-bottom:.9rem}
+.ubox{flex:1;background:rgba(0,212,255,.035);border:1.5px solid rgba(0,212,255,.16);border-radius:var(--r2);padding:.9rem 1.1rem;font-size:.9rem;color:var(--text);outline:none;direction:ltr;transition:border-color .22s,box-shadow .22s}
+.ubox::placeholder{color:var(--muted)}
+.ubox:focus{border-color:rgba(0,212,255,.5);box-shadow:0 0 0 3px rgba(0,212,255,.1)}
+.gobtn{background:linear-gradient(135deg,#004e6e,#0098c7,#00d4ff);background-size:200% auto;color:#020818;border:none;border-radius:var(--r2);padding:.9rem 1.7rem;font-family:'Orbitron',sans-serif;font-size:.72rem;font-weight:700;cursor:pointer;white-space:nowrap;letter-spacing:.1em;text-transform:uppercase;transition:all .25s;box-shadow:0 4px 22px rgba(0,212,255,.35)}
+.gobtn:hover{background-position:right center;box-shadow:0 6px 32px rgba(0,212,255,.6);transform:translateY(-1px)}
+.gobtn:active{transform:translateY(0)}
+.gobtn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+
+/* Loader */
+.ldr{display:none;flex-direction:column;align-items:center;gap:.6rem;padding:1.5rem 0 .5rem}
+.ldr.on{display:flex}
+.ldr-sun{width:44px;height:44px;animation:spin 1s linear infinite}
+.ldr-txt{font-family:'Orbitron',sans-serif;font-size:.7rem;font-weight:700;letter-spacing:.12em;color:var(--muted2);text-transform:uppercase}
+.btrack{width:220px;height:2px;background:rgba(0,212,255,.1);border-radius:999px;overflow:hidden}
+.bfill{height:100%;background:linear-gradient(90deg,#004e6e,#00d4ff);border-radius:999px;animation:banim 1.8s ease-in-out infinite;transform-origin:left}
+@keyframes banim{0%{transform:scaleX(0) translateX(0)}50%{transform:scaleX(.7) translateX(80px)}100%{transform:scaleX(0) translateX(220px)}}
+
+/* Error / Result */
+.errbox{display:none;background:rgba(200,50,30,.07);border:1px solid rgba(200,60,30,.22);border-radius:var(--r2);padding:.82rem 1rem;color:#fca5a5;font-size:.83rem;margin-top:.8rem;line-height:1.7}
+.errbox.on{display:block;animation:fdIn .3s ease}
+.reswrap{margin-top:1.2rem;display:none}
+.reswrap.on{display:block;animation:fdUp .45s ease}
+.resbox{background:rgba(0,212,255,.04);border:1px solid rgba(0,212,255,.2);border-radius:var(--r2);overflow:hidden}
+.resinner{padding:1.2rem 1.4rem;display:flex;flex-direction:column;gap:.95rem}
+.resfn{font-size:.8rem;color:var(--muted2);direction:ltr;word-break:break-all;display:flex;align-items:center;gap:.5rem}
+.resok{flex-shrink:0;width:20px;height:20px;border-radius:50%;background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.35);display:flex;align-items:center;justify-content:center;font-size:.68rem;color:var(--success)}
+.resbtns{display:flex;flex-wrap:wrap;gap:.5rem}
+.dlbtn{display:inline-flex;align-items:center;gap:.4rem;padding:.58rem 1.2rem;border-radius:9px;font-size:.83rem;font-weight:700;text-decoration:none;cursor:pointer;border:none;transition:all .18s;white-space:nowrap}
+.d-cyan{background:linear-gradient(135deg,#004e6e,#0098c7,#00d4ff);color:#020818;box-shadow:0 4px 14px rgba(0,212,255,.35)}
+.d-cyan:hover{box-shadow:0 6px 24px rgba(0,212,255,.6);transform:translateY(-1px)}
+.d-red{background:linear-gradient(135deg,#7f1d1d,#ef4444);color:#fff;box-shadow:0 4px 14px rgba(239,68,68,.3)}
+.d-red:hover{box-shadow:0 6px 22px rgba(239,68,68,.55);transform:translateY(-1px)}
+.d-ghost{background:rgba(0,212,255,.05);color:var(--text);border:1px solid rgba(0,212,255,.18)}
+.d-ghost:hover{background:rgba(0,212,255,.1);border-color:rgba(0,212,255,.35);transform:translateY(-1px)}
+.reshint{font-size:.73rem;color:var(--muted);line-height:1.6;border-top:1px solid rgba(0,212,255,.07);padding-top:.7rem}
+.token-cost-note{display:flex;align-items:center;gap:.4rem;font-size:.72rem;color:var(--gold);opacity:.8}
+
+/* ═══════════════ STATS ═══════════════ */
+.stats{width:100%;max-width:780px;padding:0 1.2rem;display:grid;grid-template-columns:repeat(4,1fr);gap:.8rem;margin-top:1.2rem;animation:fdUp .8s ease both 1s}
+.stat{background:var(--panel2);border:1px solid var(--border);border-radius:18px;padding:1.1rem .8rem;text-align:center;transition:all .22s;backdrop-filter:blur(10px)}
+.stat:hover{border-color:rgba(0,212,255,.3);transform:translateY(-2px)}
+.sv{font-family:'Orbitron',sans-serif;font-size:clamp(1.2rem,3vw,1.6rem);font-weight:900;background:linear-gradient(135deg,#0098c7,#00d4ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.sl{font-size:.62rem;color:var(--muted);margin-top:.2rem;letter-spacing:.06em;font-family:'Orbitron',sans-serif;font-weight:700;text-transform:uppercase}
+
+/* ═══════════════ MODALS ═══════════════ */
+.modal-overlay{position:fixed;inset:0;z-index:800;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:1rem;opacity:0;visibility:hidden;transition:all .3s}
+.modal-overlay.on{opacity:1;visibility:visible}
+.modal{background:rgba(4,10,24,.98);border:1px solid var(--border);border-radius:22px;width:100%;max-width:460px;max-height:90vh;overflow-y:auto;box-shadow:0 30px 80px rgba(0,0,0,.8);animation:fdUp .35s ease both;position:relative}
+.modal-wide{max-width:760px}
+.modal-head{padding:1.5rem 1.5rem 1rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border2);position:sticky;top:0;background:rgba(4,10,24,.98);z-index:1}
+.modal-title{font-family:'Orbitron',sans-serif;font-size:.8rem;font-weight:700;letter-spacing:.15em;color:var(--c1);text-transform:uppercase}
+.modal-close{width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted2);display:flex;align-items:center;justify-content:center;font-size:1rem;transition:all .2s}
+.modal-close:hover{background:rgba(255,255,255,.06);color:var(--text)}
+.modal-body{padding:1.5rem}
+
+/* Auth tabs */
+.auth-tabs{display:flex;gap:4px;background:rgba(0,0,0,.4);border:1px solid var(--border2);border-radius:12px;padding:4px;margin-bottom:1.5rem}
+.auth-tab{flex:1;padding:.55rem;border:none;border-radius:9px;background:transparent;color:var(--muted);font-size:.83rem;font-weight:700;cursor:pointer;transition:all .22s}
+.auth-tab.on{background:linear-gradient(135deg,rgba(0,212,255,.15),rgba(0,150,200,.08));color:var(--c1);box-shadow:0 0 0 1px rgba(0,212,255,.28)}
+
+/* Form fields */
+.field{margin-bottom:1rem}
+.field label{display:block;font-size:.78rem;font-weight:700;color:var(--muted2);margin-bottom:.4rem;letter-spacing:.04em}
+.field input,.field select,.field textarea{width:100%;background:rgba(0,212,255,.04);border:1.5px solid rgba(0,212,255,.16);border-radius:var(--r2);padding:.8rem 1rem;color:var(--text);font-size:.87rem;outline:none;transition:border-color .22s,box-shadow .22s;direction:rtl}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:rgba(0,212,255,.5);box-shadow:0 0 0 3px rgba(0,212,255,.1)}
+.field input::placeholder,.field textarea::placeholder{color:var(--muted)}
+.field textarea{resize:vertical;min-height:80px;font-family:'Cairo',sans-serif}
+.field select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236aacbf' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:left .8rem center}
+
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+
+.submit-btn{width:100%;padding:.9rem;background:linear-gradient(135deg,#004e6e,#0098c7,#00d4ff);color:#020818;border:none;border-radius:var(--r2);font-family:'Orbitron',sans-serif;font-size:.76rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:all .25s;box-shadow:0 4px 20px rgba(0,212,255,.3);margin-top:.5rem}
+.submit-btn:hover{box-shadow:0 6px 30px rgba(0,212,255,.55);transform:translateY(-1px)}
+.submit-btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.submit-btn.gold-btn{background:linear-gradient(135deg,#8b6200,#d4a017,#f2c94c);color:#0a0600;box-shadow:0 4px 20px rgba(212,160,23,.35)}
+.submit-btn.gold-btn:hover{box-shadow:0 6px 30px rgba(212,160,23,.55)}
+.submit-btn.danger-btn{background:linear-gradient(135deg,#7f1d1d,#dc2626);color:#fff;box-shadow:0 4px 20px rgba(220,38,38,.3)}
+
+/* Alert message */
+.alert{padding:.75rem 1rem;border-radius:var(--r2);font-size:.83rem;margin-bottom:.8rem;line-height:1.6;display:none}
+.alert.on{display:block}
+.alert-ok{background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.28);color:#4ade80}
+.alert-err{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.28);color:#f87171}
+.alert-warn{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.28);color:#fbbf24}
+.alert-info{background:rgba(0,212,255,.07);border:1px solid rgba(0,212,255,.22);color:var(--c1)}
+
+/* Payment methods */
+.pay-methods{display:grid;grid-template-columns:repeat(3,1fr);gap:.7rem;margin-bottom:1.2rem}
+.pay-method{padding:1rem .7rem;border-radius:var(--r2);border:2px solid var(--border2);background:rgba(0,0,0,.25);cursor:pointer;text-align:center;transition:all .22s;display:flex;flex-direction:column;align-items:center;gap:.4rem}
+.pay-method:hover{border-color:var(--border);background:rgba(0,212,255,.04)}
+.pay-method.on{border-color:rgba(0,212,255,.5);background:rgba(0,212,255,.08)}
+.pm-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin:0 auto}
+.pm-name{font-size:.78rem;font-weight:700;color:var(--muted2);margin-top:.2rem}
+.pm-note{font-size:.62rem;color:var(--muted)}
+.pay-section{display:none}
+.pay-section.on{display:block;animation:fdUp .3s ease}
+
+/* Pay info box */
+.pay-info-box{background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.18);border-radius:var(--r2);padding:1rem 1.2rem;margin-bottom:1rem}
+.pay-info-row{display:flex;align-items:center;justify-content:space-between;padding:.4rem 0;border-bottom:1px solid var(--border2)}
+.pay-info-row:last-child{border-bottom:none}
+.pir-label{font-size:.75rem;color:var(--muted2);font-weight:700}
+.pir-val{font-size:.85rem;color:var(--c1);font-weight:900;font-family:'Orbitron',sans-serif;direction:ltr;letter-spacing:.05em}
+.copy-btn{padding:.2rem .5rem;border-radius:6px;border:1px solid rgba(0,212,255,.25);background:rgba(0,212,255,.08);color:var(--c1);font-size:.65rem;font-weight:700;cursor:pointer;transition:all .2s}
+.copy-btn:hover{background:rgba(0,212,255,.18)}
+
+/* Token packages */
+.tok-packages{display:grid;grid-template-columns:repeat(2,1fr);gap:.7rem;margin-bottom:1rem}
+.tok-pkg{padding:.9rem;border-radius:var(--r2);border:2px solid var(--border2);background:rgba(0,0,0,.2);cursor:pointer;text-align:center;transition:all .22s}
+.tok-pkg:hover{border-color:rgba(212,160,23,.35);background:rgba(212,160,23,.05)}
+.tok-pkg.on{border-color:rgba(212,160,23,.6);background:rgba(212,160,23,.1)}
+.pkg-tokens{font-family:'Orbitron',sans-serif;font-size:1.2rem;font-weight:900;color:var(--gold2)}
+.pkg-price{font-size:.78rem;color:var(--muted2);margin-top:.2rem}
+.pkg-bonus{font-size:.65rem;color:var(--success);margin-top:.1rem}
+
+/* Image upload */
+.img-upload{border:2px dashed rgba(0,212,255,.2);border-radius:var(--r2);padding:1.5rem;text-align:center;cursor:pointer;transition:all .22s;position:relative}
+.img-upload:hover{border-color:rgba(0,212,255,.4);background:rgba(0,212,255,.03)}
+.img-upload input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+.img-upload-icon{font-size:2rem;margin-bottom:.4rem}
+.img-upload-txt{font-size:.78rem;color:var(--muted2)}
+.img-preview{width:100%;max-height:150px;object-fit:contain;border-radius:8px;margin-top:.5rem;display:none}
+
+/* Deposit history table */
+.dep-table{width:100%;border-collapse:collapse;font-size:.78rem}
+.dep-table th{padding:.6rem .8rem;text-align:right;color:var(--muted2);font-weight:700;border-bottom:1px solid var(--border2);font-family:'Orbitron',sans-serif;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
+.dep-table td{padding:.65rem .8rem;border-bottom:1px solid var(--border2);color:var(--muted2)}
+.dep-table tr:hover td{background:rgba(0,212,255,.03)}
+.status-badge{padding:.15rem .5rem;border-radius:999px;font-size:.65rem;font-weight:700;white-space:nowrap}
+.sb-pend{background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);color:#fbbf24}
+.sb-ok{background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.3);color:#4ade80}
+.sb-rej{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);color:#f87171}
+
+/* Admin panel */
+.admin-tabs{display:flex;gap:4px;background:rgba(0,0,0,.4);border:1px solid var(--border2);border-radius:12px;padding:4px;margin-bottom:1.5rem;flex-wrap:wrap}
+.admin-tab{flex:1;min-width:80px;padding:.48rem .3rem;border:none;border-radius:9px;background:transparent;color:var(--muted);font-size:.73rem;font-weight:700;cursor:pointer;transition:all .22s;white-space:nowrap}
+.admin-tab.on{background:linear-gradient(135deg,rgba(212,160,23,.2),rgba(180,120,0,.12));color:var(--gold2);box-shadow:0 0 0 1px rgba(212,160,23,.35)}
+.admin-section{display:none}
+.admin-section.on{display:block;animation:fdIn .3s ease}
+
+/* User cards in admin */
+.user-card{background:rgba(0,0,0,.3);border:1px solid var(--border2);border-radius:var(--r2);padding:.9rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:.8rem;margin-bottom:.5rem;transition:border-color .2s}
+.user-card:hover{border-color:var(--border)}
+.uc-info{flex:1}
+.uc-name{font-size:.85rem;font-weight:700;color:var(--text)}
+.uc-meta{font-size:.68rem;color:var(--muted);margin-top:.15rem;font-family:'Orbitron',sans-serif;letter-spacing:.06em}
+.uc-tokens{font-family:'Orbitron',sans-serif;font-size:1rem;font-weight:700;color:var(--gold2)}
+.uc-actions{display:flex;gap:.4rem}
+.uc-btn{padding:.3rem .65rem;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted2);font-size:.7rem;font-weight:700;cursor:pointer;transition:all .18s}
+.uc-btn:hover{background:rgba(255,255,255,.06);color:var(--text)}
+.uc-btn.danger:hover{background:rgba(248,113,113,.1);border-color:rgba(248,113,113,.3);color:#f87171}
+.uc-btn.success:hover{background:rgba(74,222,128,.1);border-color:rgba(74,222,128,.3);color:#4ade80}
+
+/* Messages */
+.msg-bubble{background:rgba(0,0,0,.3);border:1px solid var(--border2);border-radius:var(--r2);padding:.85rem 1rem;margin-bottom:.5rem}
+.msg-from{font-size:.65rem;color:var(--gold2);font-weight:700;margin-bottom:.35rem;font-family:'Orbitron',sans-serif;letter-spacing:.06em}
+.msg-text{font-size:.84rem;color:var(--muted2);line-height:1.6}
+.msg-time{font-size:.62rem;color:var(--muted);margin-top:.3rem;text-align:left}
+.msg-admin{border-color:rgba(212,160,23,.2);background:rgba(212,160,23,.04)}
+
+/* Settings fields in admin */
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+
+/* FOOTER */
+footer{position:relative;z-index:2;width:100%;border-top:1px solid var(--border2);padding:2rem 1.5rem 1.5rem;text-align:center;margin-top:3rem}
+.ft-sun{width:34px;height:34px;opacity:.3;margin:0 auto .6rem}
+.ftname{font-family:'Orbitron',sans-serif;font-size:.76rem;font-weight:900;letter-spacing:.22em;color:var(--c1);opacity:.6}
+.ftname em{color:var(--gold2);font-style:normal}
+.ftcopy{font-size:.7rem;color:var(--muted);margin-top:.4rem;opacity:.6;line-height:1.6}
+
+/* TOAST */
+.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(80px);background:rgba(4,10,24,.97);border:1px solid rgba(0,212,255,.3);border-radius:10px;padding:.7rem 1.3rem;font-size:.84rem;font-weight:700;color:var(--c1);box-shadow:0 8px 30px rgba(0,0,0,.5),0 0 30px rgba(0,212,255,.1);z-index:9999;backdrop-filter:blur(12px);transition:transform .4s cubic-bezier(.34,1.56,.64,1),opacity .4s;opacity:0;pointer-events:none;white-space:nowrap}
+.toast.on{transform:translateX(-50%) translateY(0);opacity:1}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:var(--ink)}
+::-webkit-scrollbar-thumb{background:rgba(0,212,255,.2);border-radius:3px}
+
+/* Divider */
+.div-row{width:100%;max-width:780px;padding:0 1.2rem;display:flex;align-items:center;gap:1rem;margin:1.8rem 0 1rem}
+.div-l{flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(0,212,255,.2),transparent)}
+.div-m{font-family:'Orbitron',sans-serif;font-size:.52rem;font-weight:700;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;border:1px solid var(--border2);padding:.2rem .7rem;border-radius:999px;white-space:nowrap}
+
+/* Info panels */
+.panels{width:100%;max-width:780px;padding:0 1.2rem;display:grid;grid-template-columns:1fr 1fr;gap:1rem;animation:fdUp .8s ease both 1.2s}
+.panel{background:var(--panel2);border:1px solid var(--border);border-radius:18px;padding:1.5rem 1.3rem;transition:all .22s;backdrop-filter:blur(12px)}
+.panel:hover{border-color:rgba(0,212,255,.25);transform:translateY(-2px)}
+.ptitle{font-family:'Orbitron',sans-serif;font-size:.56rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--c1);margin-bottom:1rem;opacity:.8;display:flex;align-items:center;gap:.5rem}
+.ptitle::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(0,212,255,.2),transparent)}
+.steps{display:flex;flex-direction:column;gap:.65rem}
+.step{display:flex;align-items:flex-start;gap:.6rem}
+.snum{flex-shrink:0;width:22px;height:22px;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.25);border-radius:7px;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;font-size:.56rem;font-weight:700;color:var(--c1)}
+.stxt{font-size:.8rem;color:var(--muted2);line-height:1.65;padding-top:2px}
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:.45rem}
+.pi{display:flex;align-items:center;gap:.5rem;padding:.48rem .6rem;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.04);border-radius:8px;transition:border-color .18s}
+.pi:hover{border-color:rgba(0,212,255,.15)}
+.pd{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.pname{font-size:.74rem;font-weight:700;color:var(--muted2)}
+.psub{font-size:.6rem;color:var(--muted);margin-top:.02rem}
+
+/* Empty state */
+.empty-state{text-align:center;padding:2rem 1rem;color:var(--muted)}
+.empty-icon{font-size:2.5rem;margin-bottom:.8rem;opacity:.4}
+.empty-txt{font-size:.84rem}
+
+/* Admin badge in drawer */
+.admin-badge{display:inline-flex;align-items:center;gap:.3rem;padding:.15rem .5rem;background:rgba(212,160,23,.15);border:1px solid rgba(212,160,23,.3);border-radius:999px;font-size:.62rem;font-weight:700;color:var(--gold2);margin-right:.4rem}
+
+/* RESPONSIVE */
+@media(max-width:640px){
+  .hero{padding:2.5rem 1rem 1.5rem}
+  .hero-sun-stage{width:140px;height:140px}
+  #heroSun{width:140px;height:140px}
+  .hero-title{font-size:2.8rem}
+  .card{padding:1.5rem 1.2rem}
+  .irow{flex-direction:column}
+  .gobtn{width:100%}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .panels{grid-template-columns:1fr}
+  .pgrid{grid-template-columns:1fr}
+  .pay-methods{grid-template-columns:1fr}
+  .field-row{grid-template-columns:1fr}
+  .settings-grid{grid-template-columns:1fr}
+  .tok-packages{grid-template-columns:1fr 1fr}
+  .topbar{padding:.7rem 1rem}
+  .tb-name{font-size:.72rem}
+}
+@media(max-width:380px){
+  .mbt{font-size:.68rem;padding:.42rem .1rem}
+  .hero-title{font-size:2.2rem}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════ SPLASH ══════════════ -->
+<div id="splash">
+  <div class="sp-sun-wrap">
+    <div class="sp-halo"></div>
+    <svg id="splashSun" viewBox="-100 -100 200 200" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="spg" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#e0f7ff"/>
+          <stop offset="30%" stop-color="#00d4ff"/>
+          <stop offset="70%" stop-color="#0098c7"/>
+          <stop offset="100%" stop-color="#004e6e" stop-opacity=".6"/>
+        </radialGradient>
+      </defs>
+      <g id="spRays"></g>
+      <circle r="18" fill="url(#spg)"/>
+      <circle r="11" fill="#a8eeff" opacity=".9"/>
+      <circle r="5" fill="#e8f8ff"/>
+    </svg>
+  </div>
+  <h1 class="sp-title">ALEX O</h1>
+  <p class="sp-welcome">أهلاً بكم ✨</p>
+  <p class="sp-msg">لقد أشرقت عليكم شمس اليكس<br>محمّل الوسائط الأقوى والأسرع</p>
+  <div class="sp-line"></div>
+  <span class="sp-enter">اضغط في أي مكان للدخول</span>
+</div>
+
+<!-- BG -->
+<canvas id="cvs"></canvas>
+<div class="grid-bg"></div>
+<div class="mesh"></div>
+
+<!-- ══════════════ DRAWER ══════════════ -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-head">
+    <span class="drawer-title">القائمة</span>
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+  </div>
+  <div class="drawer-body">
+    <div id="drawerUserInfo" style="display:none;padding:.7rem .8rem;background:rgba(0,212,255,.06);border:1px solid var(--border);border-radius:var(--r2);margin-bottom:.5rem">
+      <div style="font-size:.8rem;font-weight:700;color:var(--text)" id="drawerUsername"></div>
+      <div style="font-size:.65rem;color:var(--muted);margin-top:.15rem;font-family:Orbitron,sans-serif;letter-spacing:.06em" id="drawerUserId"></div>
+    </div>
+    <button class="drawer-item" onclick="openModal('accountModal');closeDrawer()">
+      <div class="di-icon di-cyan">👤</div><span>الحساب الشخصي</span>
+    </button>
+    <button class="drawer-item" onclick="openModal('depositModal');closeDrawer()">
+      <div class="di-icon di-gold">💰</div><span>الإيداع وشحن التوكنات</span>
+    </button>
+    <button class="drawer-item" onclick="openModal('historyModal');closeDrawer()">
+      <div class="di-icon di-cyan">📋</div><span>سجل الإيداعات</span>
+    </button>
+    <button class="drawer-item" onclick="openModal('messagesModal');closeDrawer()">
+      <div class="di-icon di-purple">✉️</div><span>رسائلي <span id="msgBadge" style="display:none;background:rgba(248,113,113,.8);color:#fff;border-radius:999px;padding:.05rem .4rem;font-size:.6rem;margin-right:.2rem"></span></span>
+    </button>
+    <div class="drawer-sep"></div>
+    <button class="drawer-item" onclick="openModal('howtoModal');closeDrawer()">
+      <div class="di-icon di-green">📖</div><span>تعليمات الاستخدام</span>
+    </button>
+    <button class="drawer-item" onclick="openModal('privacyModal');closeDrawer()">
+      <div class="di-icon di-cyan">🛡️</div><span>سياسة الخصوصية</span>
+    </button>
+    <div class="drawer-sep"></div>
+    <button class="drawer-item" id="adminDrawerBtn" style="display:none" onclick="openAdminPanel();closeDrawer()">
+      <div class="di-icon di-orange">⚙️</div>
+      <span><span class="admin-badge">ADMIN</span>لوحة التحكم</span>
+    </button>
+    <button class="drawer-item" id="logoutDrawerBtn" style="display:none" onclick="logout()">
+      <div class="di-icon di-red">🚪</div><span>تسجيل الخروج</span>
+    </button>
+    <button class="drawer-item" id="loginDrawerBtn" onclick="openModal('authModal');closeDrawer()">
+      <div class="di-icon di-cyan">🔐</div><span>تسجيل الدخول / إنشاء حساب</span>
+    </button>
+  </div>
+  <div class="drawer-foot"><div class="drawer-ver">ALEX O — v2.0 © 2025</div></div>
+</div>
+
+<!-- ══════════════ PAGE ══════════════ -->
+<div class="page">
+
+<!-- TOPBAR -->
+<nav class="topbar">
+  <div class="tb-left">
+    <button class="tb-menu-btn" onclick="openDrawer()" aria-label="القائمة">
+      <span></span><span></span><span></span>
+    </button>
+    <a class="tb-brand" href="#">
+      <svg class="tb-logo" viewBox="-100 -100 200 200" id="navSun"></svg>
+      <span class="tb-name">ALEX <em>O</em></span>
+    </a>
+  </div>
+  <div class="tb-right">
+    <div class="token-coin" id="tokenCoinDisplay" onclick="openModal('depositModal')" title="شحن التوكنات">
+      <svg class="coin-svg" viewBox="0 0 40 40" id="coinSvg">
+        <defs>
+          <radialGradient id="coinGold" cx="50%" cy="35%" r="65%">
+            <stop offset="0%" stop-color="#fff9e0"/>
+            <stop offset="35%" stop-color="#f2c94c"/>
+            <stop offset="70%" stop-color="#d4a017"/>
+            <stop offset="100%" stop-color="#8b6200"/>
+          </radialGradient>
+          <radialGradient id="coinSilver" cx="50%" cy="35%" r="65%">
+            <stop offset="0%" stop-color="#ffffff"/>
+            <stop offset="40%" stop-color="#e8edf5"/>
+            <stop offset="75%" stop-color="#c0c8d8"/>
+            <stop offset="100%" stop-color="#8090a8"/>
+          </radialGradient>
+          <filter id="coinShadow"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="rgba(0,0,0,.5)"/></filter>
+        </defs>
+        <!-- Outer silver ring -->
+        <circle cx="20" cy="20" r="19" fill="url(#coinSilver)" filter="url(#coinShadow)"/>
+        <!-- Gold inner -->
+        <circle cx="20" cy="20" r="16" fill="url(#coinGold)"/>
+        <!-- Vergina Sun rays -->
+        <g id="coinRays" transform="translate(20,20)"></g>
+        <!-- Core -->
+        <circle cx="20" cy="20" r="5" fill="#fff9e0" opacity=".9"/>
+        <circle cx="20" cy="20" r="2.5" fill="#ffffff"/>
+      </svg>
+      <div>
+        <div class="coin-count" id="tokenCount">50</div>
+        <div class="coin-label">توكن</div>
+      </div>
+    </div>
+    <div id="tbUserChip" class="tb-user-chip" style="display:none">
+      <span id="tbUsername"></span>
+      <span class="uid" id="tbUserId"></span>
+    </div>
+    <button class="tb-auth-btn" id="tbAuthBtn" onclick="openModal('authModal')">
+      🔐 دخول
+    </button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-sun-stage" id="heroStage">
+    <!-- 12 colored orbiting dots -->
+    <div class="orbit-ring" id="orbitRing"></div>
+    <svg id="heroSun" viewBox="-100 -100 200 200" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="hg" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#e0f7ff"/>
+          <stop offset="30%" stop-color="#00d4ff"/>
+          <stop offset="70%" stop-color="#0098c7"/>
+          <stop offset="100%" stop-color="#004e6e" stop-opacity=".6"/>
+        </radialGradient>
+        <linearGradient id="rg" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#00d4ff"/>
+          <stop offset="100%" stop-color="#004e6e" stop-opacity="0"/>
+        </linearGradient>
+        <filter id="gf"><feGaussianBlur stdDeviation="3.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      </defs>
+      <g id="hrays" filter="url(#gf)"></g>
+      <circle r="19" fill="url(#hg)"/>
+      <circle r="12" fill="#a8eeff" opacity=".9"/>
+      <circle r="6" fill="#e8f8ff"/>
+      <circle r="2.5" fill="#ffffff"/>
+    </svg>
+  </div>
+  <h1 class="hero-title"><span class="ht-alex">ALEX </span><span class="ht-o">O</span></h1>
+  <div class="scan-line"></div>
+  <p class="hero-sub">Download · Convert · Enjoy</p>
+  <div class="plats">
+    <span class="plat p-yt"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M23.5 6.2a3 3 0 00-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 00.5 6.2 31.3 31.3 0 000 12a31.3 31.3 0 00.5 5.8 3 3 0 002.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 002.1-2.1A31.3 31.3 0 0024 12a31.3 31.3 0 00-.5-5.8zM9.7 15.5V8.5l6.3 3.5-6.3 3.5z"/></svg>YouTube</span>
+    <span class="plat p-ig"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.2c3.2 0 3.6 0 4.9.1 3.3.1 4.8 1.7 4.9 4.9.1 1.3.1 1.6.1 4.8 0 3.2 0 3.6-.1 4.8-.2 3.2-1.7 4.8-4.9 4.9-1.3.1-1.6.1-4.9.1-3.2 0-3.6 0-4.8-.1-3.3-.2-4.8-1.7-4.9-4.9C2.2 15.6 2.2 15.2 2.2 12c0-3.2 0-3.6.1-4.8C2.4 3.9 3.9 2.3 7.2 2.3c1.2-.1 1.6-.1 4.8-.1zM12 0C8.7 0 8.3 0 7.1.1 2.7.3.3 2.7.1 7.1 0 8.3 0 8.7 0 12c0 3.3 0 3.7.1 4.9.2 4.4 2.6 6.8 7 7C8.3 24 8.7 24 12 24c3.3 0 3.7 0 4.9-.1 4.4-.2 6.8-2.6 7-7C24 15.7 24 15.3 24 12c0-3.3 0-3.7-.1-4.9-.2-4.4-2.6-6.8-7-7C15.7 0 15.3 0 12 0zm0 5.8a6.2 6.2 0 100 12.4A6.2 6.2 0 0012 5.8zm0 10.2a4 4 0 110-8 4 4 0 010 8zm6.4-11.8a1.4 1.4 0 100 2.8 1.4 1.4 0 000-2.8z"/></svg>Instagram</span>
+    <span class="plat p-fb"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.1C24 5.4 18.6 0 12 0S0 5.4 0 12.1c0 6 4.4 11 10.1 11.9v-8.4H7.1v-3.5h3V9.4c0-3 1.8-4.7 4.5-4.7 1.3 0 2.7.2 2.7.2v3H15.8c-1.5 0-2 .9-2 1.9v2.2h3.3l-.5 3.5h-2.8v8.4C19.6 23.1 24 18.1 24 12.1z"/></svg>Facebook</span>
+    <span class="plat p-tt"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M19.6 3.3A4.9 4.9 0 0114.8 0h-3.6v16.4a2.9 2.9 0 01-2.9 2.5 2.9 2.9 0 01-2.9-2.9 2.9 2.9 0 012.9-2.9c.3 0 .5 0 .8.1V9.5a6.5 6.5 0 00-.8 0A6.5 6.5 0 001.8 16a6.5 6.5 0 006.5 6.5A6.5 6.5 0 0014.8 16V8.2a8.4 8.4 0 004.9 1.6V6.2a4.9 4.9 0 01-.1 0z"/></svg>TikTok</span>
+    <span class="plat p-tw"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M18.3 1.2h3.5L14.3 9.7 23 22.8h-6.8l-5.2-6.8-5.9 6.8H1.6l8-9.2L1 1.2h7l4.7 6.2 5.6-6.2zm-1.2 19.4h1.9L7 3.2H5L17.1 20.6z"/></svg>Twitter/X</span>
+  </div>
+</section>
+
+<!-- MAIN CARD -->
+<div class="card-wrap">
+  <div class="card">
+    <div class="token-warn" id="tokenWarn">⚠️ رصيدك منخفض! اشحن توكناتك للاستمرار في التحميل.</div>
+    <div class="mode-bar">
+      <button class="mbt on" onclick="setMode('video',this)">🎬 فيديو</button>
+      <button class="mbt" onclick="setMode('audio',this)">🎵 MP3</button>
+      <button class="mbt" onclick="setMode('auto',this)">⚡ تلقائي</button>
+    </div>
+    <div class="qrow" id="qrow">
+      <span class="qlb">YT Quality</span>
+      <button class="qc" onclick="setQ('360',this)">360p</button>
+      <button class="qc" onclick="setQ('480',this)">480p</button>
+      <button class="qc on" onclick="setQ('720',this)">720p</button>
+      <button class="qc" onclick="setQ('1080',this)">1080p</button>
+      <button class="qc" onclick="setQ('max',this)">4K MAX</button>
+    </div>
+    <div class="badge" id="badge"></div>
+    <div class="irow">
+      <input class="ubox" id="urlIn" type="url" placeholder="الصق رابط الفيديو أو الأغنية هنا..." oninput="onUrl(this.value)" onkeydown="if(event.key==='Enter')go()" autocomplete="off" spellcheck="false"/>
+      <button class="gobtn" id="goBtn" onclick="go()">⬇ تحميل</button>
+    </div>
+    <div class="token-cost-note">🪙 كل تحميل ناجح يستهلك <strong style="color:var(--gold2);margin:0 .2rem">1 توكن</strong> من رصيدك</div>
+    <div class="ldr" id="ldr">
+      <svg class="ldr-sun" viewBox="-100 -100 200 200" id="ldrSun"></svg>
+      <div class="ldr-txt" id="ldrTxt">جاري المعالجة...</div>
+      <div class="btrack"><div class="bfill"></div></div>
+    </div>
+    <div class="errbox" id="errbox"></div>
+    <div class="reswrap" id="reswrap">
+      <div class="resbox"><div class="resinner" id="resinner"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stats">
+  <div class="stat"><div class="sv">15+</div><div class="sl">Platforms</div></div>
+  <div class="stat"><div class="sv">4K</div><div class="sl">Max Quality</div></div>
+  <div class="stat"><div class="sv">MP3</div><div class="sl">Audio</div></div>
+  <div class="stat"><div class="sv">∞</div><div class="sl">Free</div></div>
+</div>
+<div class="div-row"><div class="div-l"></div><div class="div-m">دليل الاستخدام والمنصات</div><div class="div-l"></div></div>
+<div class="panels">
+  <div class="panel">
+    <div class="ptitle">كيفية الاستخدام</div>
+    <div class="steps">
+      <div class="step"><div class="snum">01</div><div class="stxt">سجّل حساباً أو ادخل لحسابك — كل حساب يبدأ بـ 50 توكن مجاناً</div></div>
+      <div class="step"><div class="snum">02</div><div class="stxt">انسخ رابط الفيديو من أي منصة والصقه في الحقل</div></div>
+      <div class="step"><div class="snum">03</div><div class="stxt">اختر نوع التحميل والجودة واضغط تحميل (يستهلك 1 توكن)</div></div>
+      <div class="step"><div class="snum">04</div><div class="stxt">اشحن توكناتك عبر سيرتيل كاش أو شام كاش أو USDT</div></div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="ptitle">المنصات المدعومة</div>
+    <div class="pgrid">
+      <div class="pi"><div class="pd" style="background:#ff4444"></div><div><div class="pname">YouTube</div><div class="psub">Video + Music</div></div></div>
+      <div class="pi"><div class="pd" style="background:#e1306c"></div><div><div class="pname">Instagram</div><div class="psub">Reels + Stories</div></div></div>
+      <div class="pi"><div class="pd" style="background:#1877f2"></div><div><div class="pname">Facebook</div><div class="psub">Videos</div></div></div>
+      <div class="pi"><div class="pd" style="background:#00f2ea"></div><div><div class="pname">TikTok</div><div class="psub">No Watermark</div></div></div>
+      <div class="pi"><div class="pd" style="background:#1da1f2"></div><div><div class="pname">Twitter / X</div><div class="psub">Video + GIF</div></div></div>
+      <div class="pi"><div class="pd" style="background:#ff4500"></div><div><div class="pname">Reddit</div><div class="psub">Clips</div></div></div>
+    </div>
+  </div>
+</div>
+</div><!-- /page -->
+
+<footer>
+  <svg class="ft-sun" viewBox="-100 -100 200 200" id="ftSun"></svg>
+  <div class="ftname">ALEX <em>O</em></div>
+  <div class="ftcopy">جميع الحقوق محفوظة لـ ALEX &nbsp;·&nbsp; 2025</div>
+</footer>
+
+<!-- ══════════════ MODALS ══════════════ -->
+
+<!-- AUTH -->
+<div class="modal-overlay" id="authModal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title">الدخول / إنشاء حساب</span>
+      <button class="modal-close" onclick="closeModal('authModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="auth-tabs">
+        <button class="auth-tab on" onclick="switchAuthTab('login',this)">تسجيل الدخول</button>
+        <button class="auth-tab" onclick="switchAuthTab('register',this)">إنشاء حساب</button>
+      </div>
+      <div id="alertAuth" class="alert"></div>
+      <!-- LOGIN -->
+      <div id="loginForm">
+        <div class="field"><label>اسم المستخدم</label><input id="loginUser" type="text" placeholder="أدخل اسم المستخدم" autocomplete="username"/></div>
+        <div class="field"><label>كلمة المرور</label><input id="loginPass" type="password" placeholder="أدخل كلمة المرور" autocomplete="current-password"/></div>
+        <button class="submit-btn" onclick="doLogin()">تسجيل الدخول</button>
+      </div>
+      <!-- REGISTER -->
+      <div id="registerForm" style="display:none">
+        <div class="field"><label>اسم المستخدم</label><input id="regUser" type="text" placeholder="اختر اسم مستخدم فريد" autocomplete="off"/></div>
+        <div class="field-row">
+          <div class="field"><label>كلمة المرور</label><input id="regPass" type="password" placeholder="••••••••" autocomplete="new-password"/></div>
+          <div class="field"><label>تأكيد كلمة المرور</label><input id="regPass2" type="password" placeholder="••••••••" autocomplete="new-password"/></div>
+        </div>
+        <button class="submit-btn" onclick="doRegister()">إنشاء الحساب</button>
+        <p style="font-size:.72rem;color:var(--muted);text-align:center;margin-top:.8rem">ستحصل على <strong style="color:var(--gold2)">50 توكن</strong> مجاناً عند التسجيل + <strong style="color:var(--gold2)">3 توكن</strong> يومياً</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ACCOUNT -->
+<div class="modal-overlay" id="accountModal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title">الحساب الشخصي</span>
+      <button class="modal-close" onclick="closeModal('accountModal')">✕</button>
+    </div>
+    <div class="modal-body" id="accountBody">
+    </div>
+  </div>
+</div>
+
+<!-- DEPOSIT -->
+<div class="modal-overlay" id="depositModal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title">شحن التوكنات</span>
+      <button class="modal-close" onclick="closeModal('depositModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="alertDeposit" class="alert"></div>
+      <p style="font-size:.78rem;color:var(--muted2);margin-bottom:1rem;line-height:1.6">اختر طريقة الدفع المناسبة ثم أدخل تفاصيل التحويل</p>
+
+      <!-- Token packages -->
+      <p style="font-size:.72rem;color:var(--muted);margin-bottom:.6rem;font-family:Orbitron,sans-serif;letter-spacing:.08em;text-transform:uppercase">اختر الباقة</p>
+      <div class="tok-packages" id="tokPackages">
+        <div class="tok-pkg on" onclick="selectPkg(this,'100','500 ل.س')" data-tokens="100" data-price="500 ل.س">
+          <div class="pkg-tokens">100</div><div class="pkg-price">500 ل.س</div>
+        </div>
+        <div class="tok-pkg" onclick="selectPkg(this,'300','1200 ل.س')" data-tokens="300" data-price="1200 ل.س">
+          <div class="pkg-tokens">300</div><div class="pkg-price">1200 ل.س</div><div class="pkg-bonus">+50 هدية</div>
+        </div>
+        <div class="tok-pkg" onclick="selectPkg(this,'500','1800 ل.س')" data-tokens="500" data-price="1800 ل.س">
+          <div class="pkg-tokens">500</div><div class="pkg-price">1800 ل.س</div><div class="pkg-bonus">+100 هدية</div>
+        </div>
+        <div class="tok-pkg" onclick="selectPkg(this,'1000','3000 ل.س')" data-tokens="1000" data-price="3000 ل.س">
+          <div class="pkg-tokens">1000</div><div class="pkg-price">3000 ل.س</div><div class="pkg-bonus">+200 هدية</div>
+        </div>
+      </div>
+
+      <p style="font-size:.72rem;color:var(--muted);margin-bottom:.6rem;font-family:Orbitron,sans-serif;letter-spacing:.08em;text-transform:uppercase">طريقة الدفع</p>
+      <div class="pay-methods">
+        <div class="pay-method on" onclick="selectPayMethod('syriatel',this)">
+          <div class="pm-icon" style="background:rgba(255,100,0,.15);border:1px solid rgba(255,100,0,.25);font-size:1.3rem">📱</div>
+          <div class="pm-name">سيرتيل كاش</div>
+          <div class="pm-note">Syriatel Cash</div>
+        </div>
+        <div class="pay-method" onclick="selectPayMethod('sham',this)">
+          <div class="pm-icon" style="background:rgba(0,200,100,.15);border:1px solid rgba(0,200,100,.25);font-size:1.3rem">💚</div>
+          <div class="pm-name">شام كاش</div>
+          <div class="pm-note">Sham Cash</div>
+        </div>
+        <div class="pay-method" onclick="selectPayMethod('usdt',this)">
+          <div class="pm-icon" style="background:rgba(38,161,123,.15);border:1px solid rgba(38,161,123,.25);font-size:1.3rem">💎</div>
+          <div class="pm-name">USDT</div>
+          <div class="pm-note">Tether TRC20</div>
+        </div>
+      </div>
+
+      <!-- Syriatel -->
+      <div class="pay-section on" id="ps-syriatel">
+        <div class="pay-info-box">
+          <div class="pay-info-row">
+            <span class="pir-label">رقم سيرتيل كاش</span>
+            <div style="display:flex;align-items:center;gap:.5rem">
+              <span class="pir-val" id="adminSyriatelNum">0935000000</span>
+              <button class="copy-btn" onclick="copyText(document.getElementById('adminSyriatelNum').textContent)">نسخ</button>
+            </div>
+          </div>
+        </div>
+        <div class="field"><label>رقم التحويل</label><input id="syrTxNum" type="text" placeholder="رقم عملية التحويل" dir="ltr"/></div>
+        <div class="field"><label>المبلغ المحوّل</label><input id="syrAmount" type="text" placeholder="المبلغ بالليرة السورية"/></div>
+        <div class="field"><label>الكود / ملاحظة</label><input id="syrCode" type="text" placeholder="أي ملاحظة إضافية"/></div>
+        <button class="submit-btn gold-btn" onclick="submitDeposit('syriatel')">إرسال طلب الشحن</button>
+      </div>
+
+      <!-- Sham Cash -->
+      <div class="pay-section" id="ps-sham">
+        <div class="pay-info-box">
+          <div class="pay-info-row">
+            <span class="pir-label">اسم المستخدم على شام كاش</span>
+            <div style="display:flex;align-items:center;gap:.5rem">
+              <span class="pir-val" id="adminShamUser">alex_o</span>
+              <button class="copy-btn" onclick="copyText(document.getElementById('adminShamUser').textContent)">نسخ</button>
+            </div>
+          </div>
+          <div class="pay-info-row" style="border:none;padding-top:.3rem">
+            <span style="font-size:.72rem;color:var(--muted)">أرسل المبلغ لهذا الحساب ثم أدخل تفاصيل التحويل</span>
+          </div>
+        </div>
+        <div class="field"><label>اسم مستخدمك على شام كاش</label><input id="shamMyUser" type="text" placeholder="اسمك على شام كاش"/></div>
+        <div class="field"><label>المبلغ المحوّل</label><input id="shamAmount" type="text" placeholder="المبلغ المرسل"/></div>
+        <button class="submit-btn gold-btn" onclick="submitDeposit('sham')">إرسال طلب الشحن</button>
+      </div>
+
+      <!-- USDT -->
+      <div class="pay-section" id="ps-usdt">
+        <div class="pay-info-box">
+          <div class="pay-info-row">
+            <span class="pir-label">عنوان محفظة USDT (TRC20)</span>
+            <button class="copy-btn" onclick="copyText(document.getElementById('adminUsdtAddr').textContent)">نسخ</button>
+          </div>
+          <div style="font-family:monospace;font-size:.7rem;color:var(--c1);word-break:break-all;margin-top:.4rem;direction:ltr" id="adminUsdtAddr">TRC20AddressHere</div>
+        </div>
+        <div class="field"><label>المبلغ (USDT)</label><input id="usdtAmount" type="number" placeholder="مثال: 5.00" step="0.01" dir="ltr"/></div>
+        <div class="field">
+          <label>صورة إثبات التحويل</label>
+          <div class="img-upload" id="usdtUploadArea">
+            <input type="file" accept="image/*" onchange="handleProofImg(this)"/>
+            <div class="img-upload-icon">📎</div>
+            <div class="img-upload-txt">انقر لرفع صورة التحويل</div>
+            <img class="img-preview" id="proofPreview"/>
+          </div>
+        </div>
+        <button class="submit-btn gold-btn" onclick="submitDeposit('usdt')">إرسال طلب الشحن</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DEPOSIT HISTORY -->
+<div class="modal-overlay" id="historyModal">
+  <div class="modal modal-wide">
+    <div class="modal-head">
+      <span class="modal-title">سجل الإيداعات</span>
+      <button class="modal-close" onclick="closeModal('historyModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="historyContent"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MESSAGES -->
+<div class="modal-overlay" id="messagesModal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title">رسائلي</span>
+      <button class="modal-close" onclick="closeModal('messagesModal')">✕</button>
+    </div>
+    <div class="modal-body" id="messagesContent"></div>
+  </div>
+</div>
+
+<!-- HOW TO USE -->
+<div class="modal-overlay" id="howtoModal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title">تعليمات الاستخدام</span>
+      <button class="modal-close" onclick="closeModal('howtoModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="line-height:1.9;font-size:.85rem;color:var(--muted2)">
+        <p style="color:var(--c1);font-weight:700;margin-bottom:.8rem">🌟 مرحباً بك في ALEX O</p>
+        <p><strong style="color:var(--text)">1. إنشاء الحساب:</strong> اضغط على "دخول" وأنشئ حسابك مجاناً، ستحصل على 50 توكن فوراً.</p>
+        <p style="margin-top:.6rem"><strong style="color:var(--text)">2. التوكنات اليومية:</strong> عند تسجيل دخولك كل يوم ستحصل على 3 توكن مجانية.</p>
+        <p style="margin-top:.6rem"><strong style="color:var(--text)">3. التحميل:</strong> الصق الرابط واختر نوع التحميل (فيديو أو MP3) واضغط تحميل. كل تحميل ناجح يستهلك توكن واحد.</p>
+        <p style="margin-top:.6rem"><strong style="color:var(--text)">4. شحن التوكنات:</strong> عند نفاد التوكنات اذهب إلى "الإيداع" واختر طريقة الدفع المناسبة.</p>
+        <p style="margin-top:.6rem"><strong style="color:var(--text)">5. الدعم:</strong> إذا واجهت أي مشكلة تواصل مع الإدارة عبر الرسائل الواردة في حسابك.</p>
+        <div style="margin-top:1rem;padding:.8rem;background:rgba(0,212,255,.06);border:1px solid var(--border);border-radius:var(--r2)">
+          <p style="color:var(--gold2);font-weight:700;font-size:.78rem">⚠️ ملاحظة مهمة</p>
+          <p style="margin-top:.3rem;font-size:.78rem">لا نحفظ أي روابط أو محتوى تحمّله. جميع البيانات مشفّرة ومحفوظة على جهازك.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PRIVACY -->
+<div class="modal-overlay" id="privacyModal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title">سياسة الخصوصية</span>
+      <button class="modal-close" onclick="closeModal('privacyModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="line-height:1.9;font-size:.85rem;color:var(--muted2)">
+        <p style="color:var(--c1);font-weight:700;margin-bottom:.8rem">🛡️ سياسة الخصوصية — ALEX O</p>
+        <p><strong style="color:var(--text)">جمع البيانات:</strong> نجمع فقط اسم المستخدم وبيانات الإيداع الضرورية لتقديم الخدمة.</p>
+        <p style="margin-top:.6rem"><strong style="color:var(--text)">الروابط:</strong> لا نحتفظ بأي روابط تقوم بتحميلها. معالجة التحميل تتم مباشرة.</p>
+        <p style="margin-top:.6rem"><strong style="color:var(--text)">البيانات المالية:</strong> بيانات الإيداع تُستخدم فقط لتأكيد الشحن ولا تُشارك مع أطراف ثالثة.</p>
+        <p style="margin-top:.6rem"><strong style="color:var(--text)">التخزين:</strong> جميع بيانات حسابك محفوظة على جهازك محلياً.</p>
+        <p style="margin-top:.6rem"><strong style="color:var(--text)">الاتصال بنا:</strong> لأي استفسار تواصل مع الإدارة عبر رسائل الموقع.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div class="modal-overlay" id="adminModal">
+  <div class="modal modal-wide">
+    <div class="modal-head">
+      <span class="modal-title">⚙️ لوحة تحكم المدير</span>
+      <button class="modal-close" onclick="closeModal('adminModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="admin-tabs">
+        <button class="admin-tab on" onclick="switchAdminTab('users',this)">👥 المستخدمون</button>
+        <button class="admin-tab" onclick="switchAdminTab('deposits',this)">💰 الإيداعات</button>
+        <button class="admin-tab" onclick="switchAdminTab('messages',this)">✉️ الرسائل</button>
+        <button class="admin-tab" onclick="switchAdminTab('settings',this)">🔧 الإعدادات</button>
+      </div>
+
+      <!-- USERS -->
+      <div class="admin-section on" id="as-users">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+          <span style="font-size:.8rem;color:var(--muted2)">إجمالي المستخدمين: <strong id="totalUsers" style="color:var(--c1)">0</strong></span>
+          <input type="text" placeholder="بحث..." oninput="filterUsers(this.value)" style="padding:.4rem .8rem;border-radius:8px;border:1px solid var(--border);background:rgba(0,0,0,.3);color:var(--text);font-size:.8rem;outline:none;width:160px"/>
+        </div>
+        <div id="usersList"></div>
+      </div>
+
+      <!-- DEPOSITS (admin) -->
+      <div class="admin-section" id="as-deposits">
+        <div style="display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap">
+          <button class="uc-btn on" onclick="filterDeposits('all',this)" style="border-color:rgba(0,212,255,.3);color:var(--c1)">الكل</button>
+          <button class="uc-btn" onclick="filterDeposits('pending',this)">قيد المراجعة</button>
+          <button class="uc-btn success" onclick="filterDeposits('approved',this)">مقبول</button>
+          <button class="uc-btn danger" onclick="filterDeposits('rejected',this)">مرفوض</button>
+        </div>
+        <div id="adminDepositsList"></div>
+      </div>
+
+      <!-- MESSAGES (admin) -->
+      <div class="admin-section" id="as-messages">
+        <div class="field">
+          <label>إرسال رسالة إلى</label>
+          <select id="msgTarget">
+            <option value="all">جميع المستخدمين</option>
+          </select>
+        </div>
+        <div class="field"><label>نص الرسالة</label><textarea id="msgContent" placeholder="اكتب رسالتك هنا..."></textarea></div>
+        <button class="submit-btn gold-btn" onclick="sendAdminMessage()">📨 إرسال الرسالة</button>
+        <div style="margin-top:1.2rem;border-top:1px solid var(--border2);padding-top:1rem">
+          <p style="font-size:.72rem;color:var(--muted);margin-bottom:.7rem;font-family:Orbitron,sans-serif;letter-spacing:.08em;text-transform:uppercase">الرسائل المرسلة</p>
+          <div id="adminMsgList"></div>
+        </div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div class="admin-section" id="as-settings">
+        <div id="alertSettings" class="alert"></div>
+        <p style="font-size:.72rem;color:var(--muted2);margin-bottom:1rem">تحديث معلومات الدفع التي تظهر للمستخدمين</p>
+        <div class="settings-grid">
+          <div class="field"><label>رقم سيرتيل كاش</label><input id="setSymNum" type="text" dir="ltr"/></div>
+          <div class="field"><label>اسم شام كاش</label><input id="setShamUser" type="text" dir="ltr"/></div>
+          <div class="field" style="grid-column:1/-1"><label>عنوان محفظة USDT (TRC20)</label><input id="setUsdtAddr" type="text" dir="ltr" placeholder="TRC20 Address"/></div>
+        </div>
+        <p style="font-size:.72rem;color:var(--muted);margin:.8rem 0 .6rem;font-family:Orbitron,sans-serif;letter-spacing:.08em;text-transform:uppercase">أسعار الباقات</p>
+        <div class="settings-grid">
+          <div class="field"><label>100 توكن — السعر</label><input id="pkg1Price" type="text" placeholder="500 ل.س"/></div>
+          <div class="field"><label>300 توكن — السعر</label><input id="pkg2Price" type="text" placeholder="1200 ل.س"/></div>
+          <div class="field"><label>500 توكن — السعر</label><input id="pkg3Price" type="text" placeholder="1800 ل.س"/></div>
+          <div class="field"><label>1000 توكن — السعر</label><input id="pkg4Price" type="text" placeholder="3000 ل.س"/></div>
+        </div>
+        <button class="submit-btn gold-btn" onclick="saveSettings()">💾 حفظ الإعدادات</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ══════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════ -->
+<script>
+/* ═══════════ SUN BUILDER ═══════════ */
+function buildSunRays(container, gradId, OR, IR, CR, hwDeg){
+  const NS='http://www.w3.org/2000/svg';
+  const hw=(hwDeg||5.5)*Math.PI/180;
+  for(let i=0;i<16;i++){
+    const a=(i*22.5)*Math.PI/180;
+    const p=document.createElementNS(NS,'polygon');
+    const pts=[
+      [CR*Math.cos(a),CR*Math.sin(a)],
+      [IR*Math.cos(a-hw),IR*Math.sin(a-hw)],
+      [OR*Math.cos(a),OR*Math.sin(a)],
+      [IR*Math.cos(a+hw),IR*Math.sin(a+hw)]
+    ].map(v=>v.map(n=>+(n.toFixed(2))).join(',')).join(' ');
+    p.setAttribute('points',pts);
+    p.setAttribute('fill','url(#'+gradId+')');
+    container.appendChild(p);
+  }
+}
+
+function buildMiniSun(svgEl, gradId, color1, color2){
+  if(!svgEl)return;
+  const NS='http://www.w3.org/2000/svg';
+  color1=color1||'#00d4ff'; color2=color2||'#004e6e';
+  const defs=document.createElementNS(NS,'defs');
+  const rg=document.createElementNS(NS,'radialGradient');
+  rg.setAttribute('id',gradId);rg.setAttribute('cx','50%');rg.setAttribute('cy','50%');rg.setAttribute('r','50%');
+  [[0,'#fff'],[40,color1],[100,color2+' 0.3']].forEach(([o,c])=>{
+    const s=document.createElementNS(NS,'stop');
+    s.setAttribute('offset',o+'%');
+    if(c.includes(' ')){const [col,op]=c.split(' ');s.setAttribute('stop-color',col);s.setAttribute('stop-opacity',op)}
+    else s.setAttribute('stop-color',c);
+    rg.appendChild(s);
+  });
+  defs.appendChild(rg);svgEl.appendChild(defs);
+  const g=document.createElementNS(NS,'g');svgEl.appendChild(g);
+  buildSunRays(g,gradId,68,22,12);
+  [[12,'url(#'+gradId+')'],[7,'#e0f7ff',' 0.8']].forEach(([r,fill,op])=>{
+    const c=document.createElementNS(NS,'circle');c.setAttribute('r',r);
+    if(fill.startsWith('url'))c.setAttribute('fill',fill);
+    else{c.setAttribute('fill',fill);if(op)c.setAttribute('opacity',op.trim())}
+    svgEl.appendChild(c);
+  });
+}
+
+/* ═══════════ COIN SUN ═══════════ */
+function buildCoinSun(){
+  const g=document.getElementById('coinRays');
+  if(!g)return;
+  buildSunRays(g,'coinGold',10,4,2,4);
+}
+
+/* ═══════════ 12 ORBIT DOTS ═══════════ */
+const DOT_COLORS=['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#ff6bff','#ff9f43','#00d4ff','#a29bfe','#fd79a8','#55efc4','#fdcb6e','#74b9ff'];
+
+function buildOrbitDots(){
+  const ring=document.getElementById('orbitRing');
+  if(!ring)return;
+  const stage=document.getElementById('heroStage');
+  const stageSize=stage?parseInt(getComputedStyle(stage).width)||180:180;
+  const R=(stageSize/2)+28;
+  DOT_COLORS.forEach((color,i)=>{
+    const angle=(i*30)*Math.PI/180;
+    const x=R*Math.cos(angle);
+    const y=R*Math.sin(angle);
+    const dot=document.createElement('div');
+    dot.style.cssText=`
+      position:absolute;width:8px;height:8px;border-radius:50%;
+      background:${color};
+      box-shadow:0 0 8px ${color},0 0 20px ${color}44;
+      top:50%;left:50%;
+      margin-top:${y-4}px;margin-left:${x-4}px;
+      animation:dot-pulse ${1.5+i*0.2}s ease-in-out infinite alternate;
+    `;
+    ring.appendChild(dot);
+  });
+  /* Keyframes for dot pulse */
+  if(!document.getElementById('dotKF')){
+    const st=document.createElement('style');
+    st.id='dotKF';
+    st.textContent='@keyframes dot-pulse{from{transform:scale(1);opacity:.7}to{transform:scale(1.5);opacity:1}}';
+    document.head.appendChild(st);
+  }
+}
+
+/* ═══════════ CANVAS ═══════════ */
+function initCanvas(){
+  const cv=document.getElementById('cvs'),cx=cv.getContext('2d');
+  let W,H;
+  const resize=()=>{W=cv.width=innerWidth;H=cv.height=innerHeight};
+  resize();addEventListener('resize',resize);
+  const stars=Array.from({length:200},()=>({x:Math.random(),y:Math.random(),r:Math.random()*1.1+.2,a:Math.random()*.5+.1,s:Math.random()*.004+.001}));
+  const sparks=Array.from({length:20},()=>({x:Math.random(),y:Math.random(),r:Math.random()*1.8+.4,vx:(Math.random()-.5)*.0002,vy:-(Math.random()*.0003+.0001),a:Math.random()*.3+.07}));
+  let f=0;
+  (function draw(){
+    cx.clearRect(0,0,W,H);f++;
+    stars.forEach(s=>{
+      cx.beginPath();cx.arc(s.x*W,s.y*H,s.r,0,Math.PI*2);
+      cx.fillStyle=`rgba(180,230,255,${s.a*(.5+.5*Math.sin(f*s.s*25))})`;cx.fill();
+    });
+    sparks.forEach(s=>{
+      s.x+=s.vx;s.y+=s.vy;
+      if(s.y<-.05){s.y=1.05;s.x=Math.random()}
+      if(s.x<-.02||s.x>1.02)s.vx*=-1;
+      cx.beginPath();cx.arc(s.x*W,s.y*H,s.r,0,Math.PI*2);
+      cx.fillStyle=`rgba(0,212,255,${s.a})`;cx.fill();
+    });
+    requestAnimationFrame(draw);
+  })();
+}
+
+/* ═══════════ DATA (localStorage) ═══════════ */
+const DB={
+  get:(k)=>{try{return JSON.parse(localStorage.getItem('ao_'+k))||null}catch{return null}},
+  set:(k,v)=>localStorage.setItem('ao_'+k,JSON.stringify(v)),
+  users:()=>DB.get('users')||[],
+  deposits:()=>DB.get('deposits')||[],
+  messages:()=>DB.get('messages')||[],
+  settings:()=>DB.get('settings')||{syriatelNum:'0935000000',shamUser:'alex_o',usdtAddr:'TRC20AddressHere',pkg1:'500 ل.س',pkg2:'1200 ل.س',pkg3:'1800 ل.س',pkg4:'3000 ل.س'},
+  session:()=>DB.get('session')||null,
+};
+
+let currentUser=null;
+let depFilter='all';
+let selPkg={tokens:'100',price:'500 ل.س'};
+let selPayMethod='syriatel';
+let proofImageB64='';
+
+/* ═══════════ AUTH ═══════════ */
+async function hashPw(pw){
+  const data=new TextEncoder().encode(pw+'alexo_2025_salt');
+  const buf=await crypto.subtle.digest('SHA-256',data);
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+async function doLogin(){
+  const u=document.getElementById('loginUser').value.trim();
+  const p=document.getElementById('loginPass').value;
+  const alert=document.getElementById('alertAuth');
+  if(!u||!p){showAlert(alert,'error','يرجى إدخال جميع الحقول');return}
+
+  /* Admin check */
+  if(u==='ALEX'&&p==='ALEX8866'){
+    currentUser={id:'ADMIN',username:'ALEX',isAdmin:true,tokens:9999};
+    DB.set('session',{id:'ADMIN',username:'ALEX',isAdmin:true});
+    closeModal('authModal');
+    updateUI();
+    showToast('مرحباً بك يا ALEX 👑');
+    return;
+  }
+
+  const hash=await hashPw(p);
+  const users=DB.users();
+  const user=users.find(u2=>u2.username.toLowerCase()===u.toLowerCase()&&u2.password===hash);
+  if(!user){showAlert(alert,'error','اسم المستخدم أو كلمة المرور غير صحيحة');return}
+
+  /* Daily bonus */
+  const today=new Date().toDateString();
+  let bonusMsg='';
+  if(user.lastLogin!==today){
+    user.tokens=(user.tokens||0)+3;
+    user.lastLogin=today;
+    bonusMsg=' (+3 توكن يومي 🎁)';
+    const idx=users.findIndex(u2=>u2.id===user.id);
+    users[idx]=user;
+    DB.set('users',users);
+  }
+
+  currentUser=user;
+  DB.set('session',{id:user.id});
+  closeModal('authModal');
+  updateUI();
+  showToast('مرحباً '+user.username+bonusMsg);
+}
+
+async function doRegister(){
+  const u=document.getElementById('regUser').value.trim();
+  const p=document.getElementById('regPass').value;
+  const p2=document.getElementById('regPass2').value;
+  const alert=document.getElementById('alertAuth');
+  if(!u||!p||!p2){showAlert(alert,'error','يرجى إدخال جميع الحقول');return}
+  if(u==='ALEX'){showAlert(alert,'error','اسم المستخدم هذا محجوز');return}
+  if(p.length<6){showAlert(alert,'error','كلمة المرور يجب أن تكون 6 أحرف على الأقل');return}
+  if(p!==p2){showAlert(alert,'error','كلمتا المرور غير متطابقتين');return}
+
+  const users=DB.users();
+  if(users.find(u2=>u2.username.toLowerCase()===u.toLowerCase())){showAlert(alert,'error','اسم المستخدم موجود مسبقاً');return}
+
+  const hash=await hashPw(p);
+  const nextId=users.length?Math.max(...users.map(u2=>u2.id||110))+1:111;
+  const newUser={id:nextId,username:u,password:hash,tokens:50,createdAt:Date.now(),lastLogin:new Date().toDateString(),downloads:0};
+  users.push(newUser);
+  DB.set('users',users);
+  currentUser=newUser;
+  DB.set('session',{id:newUser.id});
+  closeModal('authModal');
+  updateUI();
+  showToast('مرحباً '+u+'! حصلت على 50 توكن مجاناً 🎉');
+}
+
+function logout(){
+  currentUser=null;
+  DB.set('session',null);
+  updateUI();
+  showToast('تم تسجيل الخروج');
+}
+
+function restoreSession(){
+  const s=DB.session();
+  if(!s)return;
+  if(s.id==='ADMIN'){currentUser={id:'ADMIN',username:'ALEX',isAdmin:true,tokens:9999};return}
+  const users=DB.users();
+  const u=users.find(u2=>u2.id===s.id);
+  if(u){
+    /* daily bonus on restore */
+    const today=new Date().toDateString();
+    if(u.lastLogin!==today){
+      u.tokens=(u.tokens||0)+3;
+      u.lastLogin=today;
+      const idx=users.findIndex(u2=>u2.id===u.id);
+      users[idx]=u;
+      DB.set('users',users);
+    }
+    currentUser=u;
+  }
+}
+
+/* ═══════════ UI UPDATES ═══════════ */
+function updateUI(){
+  const loggedIn=!!currentUser;
+  const isAdmin=currentUser?.isAdmin;
+
+  /* Topbar */
+  document.getElementById('tbAuthBtn').style.display=loggedIn?'none':'flex';
+  document.getElementById('tbUserChip').style.display=loggedIn?'flex':'none';
+  if(currentUser){
+    document.getElementById('tbUsername').textContent=currentUser.username+(isAdmin?' 👑':'');
+    document.getElementById('tbUserId').textContent=isAdmin?'ADMIN':'#'+currentUser.id;
+  }
+
+  /* Token count */
+  const cnt=isAdmin?'∞':(currentUser?.tokens??'—');
+  document.getElementById('tokenCount').textContent=cnt;
+
+  /* Token warning */
+  if(!isAdmin&&currentUser&&currentUser.tokens<=5&&currentUser.tokens>0){
+    document.getElementById('tokenWarn').classList.add('show');
+  } else {
+    document.getElementById('tokenWarn').classList.remove('show');
+  }
+
+  /* Drawer */
+  const duInfo=document.getElementById('drawerUserInfo');
+  if(loggedIn){
+    duInfo.style.display='block';
+    document.getElementById('drawerUsername').textContent=currentUser.username+(isAdmin?' 👑':'');
+    document.getElementById('drawerUserId').textContent=isAdmin?'ADMIN':'#'+currentUser.id;
+    document.getElementById('logoutDrawerBtn').style.display='flex';
+    document.getElementById('loginDrawerBtn').style.display='none';
+    if(isAdmin){document.getElementById('adminDrawerBtn').style.display='flex'}
+    else{document.getElementById('adminDrawerBtn').style.display='none'}
+  } else {
+    duInfo.style.display='none';
+    document.getElementById('logoutDrawerBtn').style.display='none';
+    document.getElementById('loginDrawerBtn').style.display='flex';
+    document.getElementById('adminDrawerBtn').style.display='none';
+  }
+
+  /* Unread messages badge */
+  updateMsgBadge();
+}
+
+function updateMsgBadge(){
+  if(!currentUser||currentUser.isAdmin)return;
+  const msgs=DB.messages().filter(m=>(m.to==='all'||m.to===currentUser.id)&&!m.read?.includes(currentUser.id));
+  const badge=document.getElementById('msgBadge');
+  if(msgs.length>0){badge.style.display='inline';badge.textContent=msgs.length}
+  else badge.style.display='none';
+}
+
+/* ═══════════ TOKEN OPERATIONS ═══════════ */
+function spendToken(){
+  if(!currentUser)return false;
+  if(currentUser.isAdmin)return true;
+  if(currentUser.tokens<=0)return false;
+  currentUser.tokens--;
+  const users=DB.users();
+  const idx=users.findIndex(u=>u.id===currentUser.id);
+  if(idx>-1){users[idx].tokens=currentUser.tokens;users[idx].downloads=(users[idx].downloads||0)+1;DB.set('users',users)}
+  updateUI();
+  return true;
+}
+
+/* ═══════════ DOWNLOAD APP STATE ═══════════ */
+let mode='video',quality='720',platKey='';
+
+function setMode(m,btn){
+  mode=m;document.querySelectorAll('.mbt').forEach(b=>b.classList.remove('on'));btn.classList.add('on');
+  document.getElementById('qrow').classList.toggle('on',platKey==='yt'&&mode!=='audio');
+}
+function setQ(q,btn){
+  quality=q;document.querySelectorAll('.qc').forEach(b=>b.classList.remove('on'));btn.classList.add('on');
+}
+
+const PLATS={
+  yt:{test:u=>u.includes('youtube.com')||u.includes('youtu.be'),label:'▶ YouTube',cls:'b-yt'},
+  ig:{test:u=>u.includes('instagram.com')||u.includes('instagr.am'),label:'◆ Instagram',cls:'b-ig'},
+  fb:{test:u=>u.includes('facebook.com')||u.includes('fb.watch')||u.includes('fb.com'),label:'⬛ Facebook',cls:'b-fb'},
+  tt:{test:u=>u.includes('tiktok.com')||u.includes('vm.tiktok'),label:'♪ TikTok',cls:'b-tt'},
+  tw:{test:u=>u.includes('twitter.com')||u.includes('x.com')||u.includes('t.co'),label:'✦ Twitter/X',cls:'b-tw'},
+};
+
+function onUrl(v){
+  const b=document.getElementById('badge');
+  platKey='';
+  for(const[k,p]of Object.entries(PLATS))if(p.test(v)){platKey=k;break}
+  if(platKey){const p=PLATS[platKey];b.className='badge on '+p.cls;b.textContent=p.label}
+  else b.className='badge';
+  document.getElementById('qrow').classList.toggle('on',platKey==='yt'&&mode!=='audio');
+  clearRes();
+}
+
+function clearRes(){
+  document.getElementById('reswrap').classList.remove('on');
+  document.getElementById('errbox').classList.remove('on');
+}
+
+function showErr(msg){const e=document.getElementById('errbox');e.innerHTML=msg;e.classList.add('on')}
+
+function setLoad(on,msg){
+  const btn=document.getElementById('goBtn'),ldr=document.getElementById('ldr'),lt=document.getElementById('ldrTxt');
+  btn.disabled=on;btn.textContent=on?'⏳ ...':'⬇ تحميل';
+  ldr.classList.toggle('on',on);if(msg)lt.textContent=msg;
+}
+
+function errTxt(code){
+  const m={'link.unsupported':'الرابط غير مدعوم','fetch.fail':'تعذّر جلب المحتوى','content.too_long':'الفيديو طويل جداً','content.unavailable':'المحتوى غير متاح أو خاص','fetch.rate':'تم تجاوز الحد، انتظر قليلاً','youtube.decipher':'خطأ يوتيوب، حاول لاحقاً','youtube.login':'المحتوى يتطلب تسجيل دخول'};
+  return m[code]||(code||'تعذّر التحميل');
+}
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+async function go(){
+  const url=document.getElementById('urlIn').value.trim();
+  clearRes();
+  if(!url){showErr('⚠️ الصق رابط الفيديو أولاً');return}
+  if(!platKey){showErr('⚠️ الرابط غير مدعوم. استخدم رابطاً من YouTube أو Instagram أو Facebook أو TikTok أو Twitter');return}
+  if(!currentUser){showErr('⚠️ <strong>يجب تسجيل الدخول أولاً</strong> لاستخدام التحميل. <button onclick="openModal(\'authModal\')" style="color:var(--c1);text-decoration:underline;border:none;background:none;cursor:pointer;font-size:inherit">سجّل دخولك هنا</button>');return}
+  if(!currentUser.isAdmin&&currentUser.tokens<=0){showErr('❌ <strong>رصيد التوكنات نفد!</strong> <button onclick="openModal(\'depositModal\')" style="color:var(--gold2);text-decoration:underline;border:none;background:none;cursor:pointer;font-size:inherit">اشحن الآن</button>');return}
+
+  const msgs={yt:'جاري جلب الفيديو من YouTube...',ig:'جاري جلب المنشور من Instagram...',fb:'جاري جلب الفيديو من Facebook...',tt:'جاري جلب الفيديو من TikTok...',tw:'جاري جلب المحتوى من Twitter...'};
+  setLoad(true,msgs[platKey]||'جاري المعالجة...');
+
+  const body=JSON.stringify({url,downloadMode:mode==='audio'?'audio':(mode==='video'?'video':'auto'),videoQuality:platKey==='yt'?quality:'max',filenameStyle:'pretty',audioFormat:'mp3',tiktokFullAudio:true,twitterGif:false});
+  const APIS=['https://api.cobalt.tools/','https://cobalt-api.kwiatekmiki.com/','https://cobalt.canine.tools/'];
+  let lastErr='';
+
+  for(const api of APIS){
+    try{
+      const res=await fetch(api,{method:'POST',headers:{'Accept':'application/json','Content-Type':'application/json'},body,signal:AbortSignal.timeout(12000)});
+      if(!res.ok){lastErr='HTTP '+res.status;continue}
+      const data=await res.json();
+      setLoad(false);
+      if(data.status==='error'||data.error){showErr('❌ '+errTxt(data.error?.code||data.text||''));return}
+      if(spendToken())renderResult(data);
+      return;
+    }catch(e){lastErr=e.message;continue}
+  }
+  setLoad(false);
+  showErr('❌ تعذّر الاتصال. جرّب <a href="https://cobalt.tools" target="_blank" style="color:var(--c1);text-decoration:underline">cobalt.tools</a> مباشرة.<br><small style="opacity:.5">خطأ: '+lastErr+'</small>');
+}
+
+function renderResult(data){
+  const wrap=document.getElementById('reswrap'),inner=document.getElementById('resinner'),isAudio=mode==='audio';
+  let html='';
+  if(data.url){
+    const fn=data.filename||(isAudio?'audio.mp3':'video.mp4');
+    const ql=platKey==='yt'&&!isAudio?(quality==='max'?'4K MAX':quality+'p'):'';
+    const bc=platKey==='yt'?'dlbtn d-red':'dlbtn d-cyan';
+    const bl=isAudio?'⬇ تحميل MP3':`⬇ تحميل${ql?' · '+ql:''}`;
+    html=`<div class="resfn"><div class="resok">✓</div><span>${esc(fn)}</span></div>
+      <div class="resbtns"><a class="${bc}" href="${esc(data.url)}" download="${esc(fn)}" target="_blank">${bl}</a></div>
+      <div class="reshint">💡 كليك يمين ← «حفظ باسم» إذا فُتح في المتصفح</div>`;
+  } else if(data.status==='picker'&&data.picker?.length){
+    html=`<div class="resfn"><div class="resok">✓</div><span>${data.picker.length} ملفات متاحة</span></div><div class="resbtns">`;
+    data.picker.forEach((item,i)=>{
+      html+=`<a class="dlbtn ${item.type==='photo'?'d-ghost':'d-cyan'}" href="${esc(item.url)}" download target="_blank">${item.type==='photo'?'🖼':'🎬'} ملف ${i+1}</a>`;
+    });
+    if(data.audio)html+=`<a class="dlbtn d-ghost" href="${esc(data.audio)}" download target="_blank">🎵 صوت</a>`;
+    html+=`</div>`;
+  } else{showErr('❌ رد غير متوقع، حاول مجدداً');return}
+  inner.innerHTML=html;wrap.classList.add('on');
+  showToast('✓ جاهز! تم خصم توكن 🪙');
+}
+
+/* ═══════════ DEPOSIT SYSTEM ═══════════ */
+function selectPkg(el,tokens,price){
+  document.querySelectorAll('.tok-pkg').forEach(e=>e.classList.remove('on'));
+  el.classList.add('on');selPkg={tokens,price};
+}
+
+function selectPayMethod(method,el){
+  document.querySelectorAll('.pay-method').forEach(e=>e.classList.remove('on'));
+  el.classList.add('on');selPayMethod=method;
+  document.querySelectorAll('.pay-section').forEach(e=>e.classList.remove('on'));
+  document.getElementById('ps-'+method).classList.add('on');
+}
+
+function handleProofImg(input){
+  const file=input.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    proofImageB64=e.target.result;
+    const prev=document.getElementById('proofPreview');
+    prev.src=proofImageB64;prev.style.display='block';
+  };
+  reader.readAsDataURL(file);
+}
+
+function genDepId(){
+  const deps=DB.deposits();
+  const num=(deps.length+1).toString().padStart(4,'0');
+  return 'DEP-'+num;
+}
+
+function submitDeposit(method){
+  const alert=document.getElementById('alertDeposit');
+  if(!currentUser||currentUser.isAdmin){showAlert(alert,'error','يجب تسجيل الدخول أولاً');return}
+
+  let depData={id:genDepId(),userId:currentUser.id,username:currentUser.username,method,tokens:selPkg.tokens,price:selPkg.price,status:'pending',createdAt:Date.now(),note:''};
+
+  if(method==='syriatel'){
+    const txNum=document.getElementById('syrTxNum').value.trim();
+    const amount=document.getElementById('syrAmount').value.trim();
+    const code=document.getElementById('syrCode').value.trim();
+    if(!txNum||!amount){showAlert(alert,'error','يرجى إدخال رقم التحويل والمبلغ');return}
+    depData={...depData,txNum,amount,code};
+  } else if(method==='sham'){
+    const shamUser=document.getElementById('shamMyUser').value.trim();
+    const amount=document.getElementById('shamAmount').value.trim();
+    if(!shamUser||!amount){showAlert(alert,'error','يرجى إدخال جميع الحقول');return}
+    depData={...depData,shamUser,amount};
+  } else if(method==='usdt'){
+    const amount=document.getElementById('usdtAmount').value.trim();
+    if(!amount){showAlert(alert,'error','يرجى إدخال المبلغ');return}
+    depData={...depData,amount,proof:proofImageB64};
+  }
+
+  const deps=DB.deposits();
+  deps.push(depData);
+  DB.set('deposits',deps);
+  showAlert(alert,'ok','✅ تم إرسال طلب الشحن بنجاح! رقم الطلب: <strong>'+depData.id+'</strong><br>سيتم مراجعته خلال 24 ساعة.');
+  showToast('تم إرسال الطلب '+depData.id);
+}
+
+/* ═══════════ HISTORY MODAL ═══════════ */
+function openHistoryModal(){
+  const div=document.getElementById('historyContent');
+  if(!currentUser||currentUser.isAdmin){div.innerHTML='<div class="empty-state"><div class="empty-icon">🔐</div><div class="empty-txt">يجب تسجيل الدخول لعرض السجل</div></div>';return}
+  const deps=DB.deposits().filter(d=>d.userId===currentUser.id);
+  if(!deps.length){div.innerHTML='<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-txt">لا توجد إيداعات بعد</div></div>';return}
+  let html='<div style="overflow-x:auto"><table class="dep-table"><thead><tr><th>الرقم</th><th>الطريقة</th><th>التوكنات</th><th>السعر</th><th>الحالة</th><th>ملاحظة</th><th>التاريخ</th></tr></thead><tbody>';
+  deps.slice().reverse().forEach(d=>{
+    const meth={syriatel:'سيرتيل',sham:'شام',usdt:'USDT'}[d.method]||d.method;
+    const date=new Date(d.createdAt).toLocaleDateString('ar-SY');
+    const stBadge=d.status==='pending'?'<span class="status-badge sb-pend">قيد المراجعة</span>':d.status==='approved'?'<span class="status-badge sb-ok">مقبول ✓</span>':'<span class="status-badge sb-rej">مرفوض ✗</span>';
+    html+=`<tr><td style="font-family:Orbitron,sans-serif;font-size:.7rem;color:var(--c1)">${esc(d.id)}</td><td>${meth}</td><td style="color:var(--gold2);font-weight:700">${esc(d.tokens)}</td><td>${esc(d.price)}</td><td>${stBadge}</td><td style="font-size:.72rem;color:var(--error)">${d.note?esc(d.note):'—'}</td><td style="font-size:.7rem">${date}</td></tr>`;
+  });
+  html+='</tbody></table></div>';
+  div.innerHTML=html;
+}
+
+/* ═══════════ MESSAGES ═══════════ */
+function openMessagesModal(){
+  const div=document.getElementById('messagesContent');
+  if(!currentUser||currentUser.isAdmin){div.innerHTML='<div class="empty-state"><div class="empty-icon">🔐</div><div class="empty-txt">يجب تسجيل الدخول</div></div>';return}
+  const msgs=DB.messages().filter(m=>m.to==='all'||m.to===currentUser.id);
+  /* Mark as read */
+  const allMsgs=DB.messages();
+  allMsgs.forEach(m=>{if((m.to==='all'||m.to===currentUser.id)&&!m.read?.includes(currentUser.id)){if(!m.read)m.read=[];m.read.push(currentUser.id)}});
+  DB.set('messages',allMsgs);
+  updateMsgBadge();
+  if(!msgs.length){div.innerHTML='<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-txt">لا توجد رسائل بعد</div></div>';return}
+  let html='';
+  msgs.slice().reverse().forEach(m=>{
+    html+=`<div class="msg-bubble msg-admin">
+      <div class="msg-from">📢 ${m.to==='all'?'رسالة للجميع':'رسالة خاصة'} — من الإدارة</div>
+      <div class="msg-text">${esc(m.content)}</div>
+      <div class="msg-time">${new Date(m.createdAt).toLocaleString('ar-SY')}</div>
+    </div>`;
+  });
+  div.innerHTML=html;
+}
+
+/* ═══════════ ACCOUNT MODAL ═══════════ */
+function openAccountModal(){
+  const div=document.getElementById('accountBody');
+  if(!currentUser){div.innerHTML='<div class="empty-state"><div class="empty-icon">🔐</div><div class="empty-txt">يجب تسجيل الدخول أولاً</div></div>';return}
+  div.innerHTML=`
+    <div style="text-align:center;margin-bottom:1.5rem">
+      <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,rgba(0,212,255,.15),rgba(0,150,200,.08));border:2px solid rgba(0,212,255,.3);display:flex;align-items:center;justify-content:center;font-size:1.8rem;margin:0 auto .8rem">
+        ${currentUser.isAdmin?'👑':'👤'}
+      </div>
+      <div style="font-size:1.1rem;font-weight:700;color:var(--text)">${esc(currentUser.username)}</div>
+      <div style="font-family:Orbitron,sans-serif;font-size:.65rem;color:var(--muted);margin-top:.2rem">#${currentUser.id}</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-bottom:1.2rem">
+      <div style="background:rgba(0,0,0,.3);border:1px solid var(--border2);border-radius:var(--r2);padding:.9rem;text-align:center">
+        <div style="font-family:Orbitron,sans-serif;font-size:1.5rem;font-weight:900;background:linear-gradient(135deg,var(--gold),var(--gold2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${currentUser.isAdmin?'∞':currentUser.tokens}</div>
+        <div style="font-size:.65rem;color:var(--muted);margin-top:.2rem;font-family:Orbitron,sans-serif;text-transform:uppercase;letter-spacing:.08em">توكن متبقي</div>
+      </div>
+      <div style="background:rgba(0,0,0,.3);border:1px solid var(--border2);border-radius:var(--r2);padding:.9rem;text-align:center">
+        <div style="font-family:Orbitron,sans-serif;font-size:1.5rem;font-weight:900;color:var(--c1)">${currentUser.downloads||0}</div>
+        <div style="font-size:.65rem;color:var(--muted);margin-top:.2rem;font-family:Orbitron,sans-serif;text-transform:uppercase;letter-spacing:.08em">تحميل</div>
+      </div>
+    </div>
+    <div style="background:rgba(0,212,255,.04);border:1px solid var(--border);border-radius:var(--r2);padding:.9rem;font-size:.78rem;color:var(--muted2);line-height:1.7;margin-bottom:1rem">
+      <div>📅 تاريخ التسجيل: ${currentUser.createdAt?new Date(currentUser.createdAt).toLocaleDateString('ar-SY'):'—'}</div>
+      <div style="margin-top:.3rem">🎁 التوكن اليومي: 3 توكن عند كل تسجيل دخول يومي</div>
+    </div>
+    <button class="submit-btn" onclick="openModal('depositModal');closeModal('accountModal')">🪙 شحن التوكنات</button>
+  `;
+}
+
+/* ═══════════ ADMIN PANEL ═══════════ */
+function openAdminPanel(){
+  if(!currentUser?.isAdmin)return;
+  openModal('adminModal');
+  loadAdminUsers();
+  loadAdminDeposits();
+  loadAdminMessages();
+  loadAdminSettings();
+  loadMsgTargets();
+}
+
+function loadAdminUsers(){
+  const users=DB.users();
+  document.getElementById('totalUsers').textContent=users.length;
+  renderUsersList(users);
+}
+
+function renderUsersList(users){
+  const div=document.getElementById('usersList');
+  if(!users.length){div.innerHTML='<div class="empty-state"><div class="empty-icon">👥</div><div class="empty-txt">لا يوجد مستخدمون بعد</div></div>';return}
+  div.innerHTML=users.map(u=>`
+    <div class="user-card">
+      <div class="uc-info">
+        <div class="uc-name">${esc(u.username)}</div>
+        <div class="uc-meta">#${u.id} · ${u.downloads||0} تحميل · ${new Date(u.createdAt).toLocaleDateString('ar-SY')}</div>
+      </div>
+      <div class="uc-tokens">${u.tokens}🪙</div>
+      <div class="uc-actions">
+        <button class="uc-btn success" onclick="adminAddTokens(${u.id})">+توكن</button>
+        <button class="uc-btn" onclick="adminEditUser(${u.id})">تعديل</button>
+        <button class="uc-btn danger" onclick="adminDeleteUser(${u.id})">حذف</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterUsers(q){
+  const users=DB.users().filter(u=>u.username.toLowerCase().includes(q.toLowerCase())||String(u.id).includes(q));
+  renderUsersList(users);
+}
+
+function adminAddTokens(uid){
+  const amt=prompt('كم توكن تريد إضافة؟','50');
+  if(!amt||isNaN(amt))return;
+  const users=DB.users();
+  const idx=users.findIndex(u=>u.id===uid);
+  if(idx>-1){users[idx].tokens=(users[idx].tokens||0)+parseInt(amt);DB.set('users',users);loadAdminUsers();showToast('تمت إضافة '+amt+' توكن')}
+}
+
+function adminEditUser(uid){
+  const users=DB.users();
+  const u=users.find(u=>u.id===uid);
+  if(!u)return;
+  const newTokens=prompt('رصيد التوكنات لـ '+u.username+':',u.tokens);
+  if(newTokens===null||isNaN(newTokens))return;
+  const idx=users.findIndex(u=>u.id===uid);
+  users[idx].tokens=parseInt(newTokens);
+  DB.set('users',users);loadAdminUsers();showToast('تم تحديث الحساب');
+}
+
+function adminDeleteUser(uid){
+  if(!confirm('حذف هذا الحساب؟'))return;
+  const users=DB.users().filter(u=>u.id!==uid);
+  DB.set('users',users);loadAdminUsers();showToast('تم حذف الحساب');
+}
+
+function loadAdminDeposits(){renderAdminDeposits(depFilter)}
+
+function filterDeposits(f,btn){
+  depFilter=f;
+  document.querySelectorAll('#as-deposits .uc-btn').forEach(b=>b.style.borderColor='');
+  renderAdminDeposits(f);
+}
+
+function renderAdminDeposits(filter){
+  const div=document.getElementById('adminDepositsList');
+  let deps=DB.deposits();
+  if(filter!=='all')deps=deps.filter(d=>d.status===filter);
+  if(!deps.length){div.innerHTML='<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-txt">لا توجد طلبات</div></div>';return}
+  div.innerHTML=deps.slice().reverse().map(d=>{
+    const meth={syriatel:'📱 سيرتيل',sham:'💚 شام كاش',usdt:'💎 USDT'}[d.method]||d.method;
+    const stBadge=d.status==='pending'?'<span class="status-badge sb-pend">قيد المراجعة</span>':d.status==='approved'?'<span class="status-badge sb-ok">مقبول</span>':'<span class="status-badge sb-rej">مرفوض</span>';
+    const proof=d.proof?`<img src="${d.proof}" style="max-width:100px;max-height:70px;border-radius:6px;margin-top:.4rem;cursor:pointer" onclick="window.open(this.src)"/>`:''
+    return `<div class="user-card" style="flex-direction:column;align-items:flex-start;gap:.6rem">
+      <div style="display:flex;width:100%;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.4rem">
+        <div>
+          <div style="font-family:Orbitron,sans-serif;font-size:.7rem;color:var(--c1)">${esc(d.id)}</div>
+          <div class="uc-name">${esc(d.username)} · ${meth}</div>
+          <div class="uc-meta">${esc(d.tokens)} توكن · ${esc(d.price)} · ${new Date(d.createdAt).toLocaleString('ar-SY')}</div>
+          ${d.txNum?'<div class="uc-meta">رقم التحويل: '+esc(d.txNum)+'</div>':''}
+          ${d.amount?'<div class="uc-meta">المبلغ: '+esc(d.amount)+'</div>':''}
+          ${d.shamUser?'<div class="uc-meta">شام كاش: '+esc(d.shamUser)+'</div>':''}
+          ${proof}
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.4rem">
+          ${stBadge}
+          ${d.status==='pending'?`
+            <div style="display:flex;gap:.4rem">
+              <button class="uc-btn success" onclick="approveDeposit('${d.id}')">قبول ✓</button>
+              <button class="uc-btn danger" onclick="rejectDeposit('${d.id}')">رفض ✗</button>
+            </div>
+          `:''}
+        </div>
+      </div>
+      ${d.note?'<div style="font-size:.72rem;color:var(--error);border-top:1px solid var(--border2);padding-top:.4rem;width:100%">ملاحظة: '+esc(d.note)+'</div>':''}
+    </div>`;
+  }).join('');
+}
+
+function approveDeposit(id){
+  const deps=DB.deposits();
+  const idx=deps.findIndex(d=>d.id===id);
+  if(idx<0)return;
+  const dep=deps[idx];
+  dep.status='approved';
+  /* Add tokens to user */
+  const users=DB.users();
+  const uidx=users.findIndex(u=>u.id===dep.userId);
+  if(uidx>-1){users[uidx].tokens=(users[uidx].tokens||0)+parseInt(dep.tokens);DB.set('users',users)}
+  if(currentUser&&currentUser.id===dep.userId){currentUser.tokens=users[uidx].tokens;updateUI()}
+  DB.set('deposits',deps);
+  loadAdminDeposits();
+  showToast('تم قبول الطلب وإضافة '+dep.tokens+' توكن');
+}
+
+function rejectDeposit(id){
+  const reason=prompt('سبب الرفض (اختياري):','');
+  if(reason===null)return;
+  const deps=DB.deposits();
+  const idx=deps.findIndex(d=>d.id===id);
+  if(idx<0)return;
+  deps[idx].status='rejected';
+  deps[idx].note=reason;
+  DB.set('deposits',deps);loadAdminDeposits();showToast('تم رفض الطلب');
+}
+
+function loadAdminMessages(){
+  const div=document.getElementById('adminMsgList');
+  const msgs=DB.messages();
+  if(!msgs.length){div.innerHTML='<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-txt">لا توجد رسائل مرسلة</div></div>';return}
+  div.innerHTML=msgs.slice().reverse().map(m=>`
+    <div class="msg-bubble">
+      <div class="msg-from">إلى: ${m.to==='all'?'جميع المستخدمين':'#'+m.to}</div>
+      <div class="msg-text">${esc(m.content)}</div>
+      <div class="msg-time">${new Date(m.createdAt).toLocaleString('ar-SY')}</div>
+    </div>
+  `).join('');
+}
+
+function loadMsgTargets(){
+  const sel=document.getElementById('msgTarget');
+  const users=DB.users();
+  sel.innerHTML='<option value="all">جميع المستخدمين</option>'+users.map(u=>`<option value="${u.id}">${esc(u.username)} (#${u.id})</option>`).join('');
+}
+
+function sendAdminMessage(){
+  const to=document.getElementById('msgTarget').value;
+  const content=document.getElementById('msgContent').value.trim();
+  if(!content){showToast('اكتب نص الرسالة أولاً');return}
+  const msgs=DB.messages();
+  msgs.push({id:'MSG-'+Date.now(),to,content,createdAt:Date.now(),read:[]});
+  DB.set('messages',msgs);
+  document.getElementById('msgContent').value='';
+  loadAdminMessages();
+  showToast('تم إرسال الرسالة ✉️');
+  updateMsgBadge();
+}
+
+function loadAdminSettings(){
+  const s=DB.settings();
+  document.getElementById('setSymNum').value=s.syriatelNum||'';
+  document.getElementById('setShamUser').value=s.shamUser||'';
+  document.getElementById('setUsdtAddr').value=s.usdtAddr||'';
+  document.getElementById('pkg1Price').value=s.pkg1||'';
+  document.getElementById('pkg2Price').value=s.pkg2||'';
+  document.getElementById('pkg3Price').value=s.pkg3||'';
+  document.getElementById('pkg4Price').value=s.pkg4||'';
+}
+
+function saveSettings(){
+  const s={
+    syriatelNum:document.getElementById('setSymNum').value.trim(),
+    shamUser:document.getElementById('setShamUser').value.trim(),
+    usdtAddr:document.getElementById('setUsdtAddr').value.trim(),
+    pkg1:document.getElementById('pkg1Price').value.trim(),
+    pkg2:document.getElementById('pkg2Price').value.trim(),
+    pkg3:document.getElementById('pkg3Price').value.trim(),
+    pkg4:document.getElementById('pkg4Price').value.trim(),
+  };
+  DB.set('settings',s);
+  applySettings();
+  const al=document.getElementById('alertSettings');
+  showAlert(al,'ok','✅ تم حفظ الإعدادات');
+  showToast('تم حفظ الإعدادات ✓');
+}
+
+function applySettings(){
+  const s=DB.settings();
+  if(document.getElementById('adminSyriatelNum'))document.getElementById('adminSyriatelNum').textContent=s.syriatelNum||'0935000000';
+  if(document.getElementById('adminShamUser'))document.getElementById('adminShamUser').textContent=s.shamUser||'alex_o';
+  if(document.getElementById('adminUsdtAddr'))document.getElementById('adminUsdtAddr').textContent=s.usdtAddr||'TRC20AddressHere';
+  /* Update packages display */
+  const pkgs=document.querySelectorAll('.tok-pkg .pkg-price');
+  const prices=[s.pkg1,s.pkg2,s.pkg3,s.pkg4];
+  pkgs.forEach((el,i)=>{if(prices[i])el.textContent=prices[i]});
+  /* Update selPkg if needed */
+  selPkg.price=prices[0]||'500 ل.س';
+}
+
+/* ═══════════ ADMIN TABS ═══════════ */
+function switchAdminTab(tab,btn){
+  document.querySelectorAll('.admin-tab').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.admin-section').forEach(s=>s.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('as-'+tab).classList.add('on');
+  if(tab==='users')loadAdminUsers();
+  else if(tab==='deposits')loadAdminDeposits();
+  else if(tab==='messages'){loadAdminMessages();loadMsgTargets()}
+  else if(tab==='settings')loadAdminSettings();
+}
+
+/* ═══════════ MODAL SYSTEM ═══════════ */
+function openModal(id){
+  if(id==='historyModal')openHistoryModal();
+  if(id==='messagesModal')openMessagesModal();
+  if(id==='accountModal')openAccountModal();
+  document.getElementById(id).classList.add('on');
+}
+function closeModal(id){document.getElementById(id).classList.remove('on')}
+document.querySelectorAll('.modal-overlay').forEach(el=>{
+  el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('on')})
+});
+
+/* ═══════════ AUTH TABS ═══════════ */
+function switchAuthTab(tab,btn){
+  document.querySelectorAll('.auth-tab').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('loginForm').style.display=tab==='login'?'block':'none';
+  document.getElementById('registerForm').style.display=tab==='register'?'block':'none';
+  document.getElementById('alertAuth').classList.remove('on');
+}
+
+/* ═══════════ DRAWER ═══════════ */
+function openDrawer(){document.getElementById('drawer').classList.add('on');document.getElementById('drawerOverlay').classList.add('on')}
+function closeDrawer(){document.getElementById('drawer').classList.remove('on');document.getElementById('drawerOverlay').classList.remove('on')}
+
+/* ═══════════ HELPERS ═══════════ */
+function showAlert(el,type,msg){el.className='alert on alert-'+type;el.innerHTML=msg}
+function showToast(msg,d=3000){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),d)}
+function copyText(txt){navigator.clipboard.writeText(txt).then(()=>showToast('تم النسخ ✓')).catch(()=>showToast('فشل النسخ'))}
+
+/* ═══════════ SPLASH ═══════════ */
+document.getElementById('splash').addEventListener('click',()=>document.getElementById('splash').classList.add('hide'));
+setTimeout(()=>document.getElementById('splash').classList.add('hide'),5000);
+
+/* ═══════════ INIT ═══════════ */
+window.addEventListener('DOMContentLoaded',()=>{
+  /* Build suns */
+  buildSunRays(document.getElementById('spRays'),'spg',76,26,13);
+  buildSunRays(document.getElementById('hrays'),'rg',80,28,14);
+  buildMiniSun(document.getElementById('navSun'),'ng');
+  buildMiniSun(document.getElementById('ldrSun'),'lg');
+  buildMiniSun(document.getElementById('ftSun'),'fg');
+  buildCoinSun();
+  buildOrbitDots();
+  initCanvas();
+  restoreSession();
+  updateUI();
+  applySettings();
+});
+</script>
+</body>
+</html>
